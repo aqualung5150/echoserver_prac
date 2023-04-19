@@ -111,10 +111,13 @@ public:
                     }
                     else
                     {
+                        // Read를 하여 객체에 저장
                         _ping.find(i)->second += std::string(buf);
                         std::cout << "read : " << _ping.find(i)->second << std::endl;
                         bzero(&buf, BUF_SIZE);
                     }
+                    // read를 할 때 마다 isRequestDone() ?-> response 생성
+                    // (하지만 요청이 중간에 잘려 있다면???)
                     continue;
                 }
 
