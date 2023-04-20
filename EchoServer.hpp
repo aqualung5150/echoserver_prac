@@ -124,6 +124,7 @@ public:
 
         while(1)
         {
+            // select() 이후에는 원본(fds)을 알 수 없으므로 readFDs에 복사하여 사용한다.
             readFDs = fds;
             
             timeout.tv_sec = 5;
@@ -136,37 +137,41 @@ public:
             */
             if ((fd_num = select(fd_max + 1, &readFDs, &writeFDs, 0, &timeout)) == -1)
                 break;
-
-            // std::cout << "After Select" << std::endl;
-
             if (fd_num == 0)
                 continue;
 
+            // listenSock에 이벤트가 발생했다면 해당 클라이언트를 accept()
             if (FD_ISSET(listenSock, &readFDs))
             {
                 Connection newConnection;
                 adr_sz = sizeof(clientAddr);
                 clientSock = accept(listenSock, (struct sockaddr*)&clientAddr, &adr_sz);
 
+                // map에도 추가해줌
                 _connections.insert(std::pair<int, Connection>(clientSock, newConnection));
-                // _connections.insert(std::pair<int, std::string>(clientSock, ""));
 
+                /*
+                소켓은 논블록처리함
+                -> select에서 이미 읽기/쓰기가 가능한 소켓을 알려주지만 막상 소켓에 read/write 했더니 block이 될 수 있음.
+                */
                 fcntl(clientSock, F_SETFL, O_NONBLOCK);
+
                 FD_SET(clientSock, &fds);
                 if (fd_max < clientSock)
                     fd_max = clientSock;
-                std::cout << "connected client: " << clientSock << std::endl;
+                std::cout << "connected : " << clientSock << std::endl;
             }
 
             for (std::map<int, Connection>::iterator it = _connections.begin(); it != _connections.end(); ++it)
             {
                 if (FD_ISSET(it->first, &readFDs))
                 {
-                    if (it->second.readRequest(it->first) == 0 && it->second.getStatus() != READ_DONE)
+                    // if (it->second.readRequest(it->first) == 0 && it->second.getStatus() != READ_DONE)
+                    if (it->second.readRequest(it->first) == 0)
                     {
                         FD_CLR(it->first, &fds);
                         close(it->first);
-                        std::cout << "cntl + c, closed client: " << it->first << std::endl;
+                        std::cout << "cntl + c, connection closed : " << it->first << std::endl;
 
                         // std::map의 원소를 지우는 방법 다시 생각해보기...
                         _connections.erase(it);
@@ -189,7 +194,7 @@ public:
                         FD_CLR(it->first, &fds);    
                         FD_CLR(it->first, &writeFDs);
                         close(it->first);
-                        std::cout << "response sent, closed client: " << it->first << std::endl;
+                        std::cout << "response sent, connection closed : " << it->first << std::endl;
 
                         _connections.erase(it);
                         break;
