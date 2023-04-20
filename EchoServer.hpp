@@ -12,12 +12,68 @@
 #include <iostream>
 #include <map>
 
-#define BUF_SIZE 2
+#define BUF_SIZE 100
+#define READ_DONE true
+
+class Connection
+{
+private:
+    bool _status;
+    std::string _request;
+    std::string _response;
+public:
+    Connection()
+    : _status(false), _request(""), _response("---RESPONSE---\n")
+    {
+    }
+
+    bool getStatus()
+    {
+        return _status;
+    }
+
+    int readRequest(int socket)
+    {
+        char buf[BUF_SIZE];
+        int nread;
+
+        nread = read(socket, buf, BUF_SIZE);
+        if (nread == 0 || nread == -1)
+            return (0);
+        else
+        {
+            _request.append(buf, nread);
+            bzero(&buf, BUF_SIZE);
+        }
+
+        if (_request.find("aaa") != std::string::npos)
+        {
+            _status = READ_DONE;
+        }
+        return (1);
+    }
+
+    void buildResponse()
+    {
+        _response.append(_request);
+        _response.append("--------------");
+        std::cout << _response << std::endl;
+    }
+    
+    int writeResponse(int socket)
+    {
+        write(socket, _response.c_str(), BUF_SIZE);
+        _response.erase(0, BUF_SIZE);
+        if (_response.empty())
+            return (0);
+        return (1);
+    }
+};
 
 class EchoServer
 {
 private:
-    std::map<int, std::string> _ping;
+    std::map<int, Connection> _connections;
 public:
     static void ft_bzero(void *s, size_t n)
     {
@@ -37,11 +93,10 @@ public:
         struct sockaddr_in listenAddr, clientAddr;
         struct timeval timeout;
 
-        fd_set fds, readSet, writeSet;
+        fd_set fds, readFDs, writeFDs;
 
         socklen_t adr_sz;
-        int fd_max, fd_num, nread;
-        char buf[BUF_SIZE];
+        int fd_max, fd_num;
 
         listenSock = socket(PF_INET, SOCK_STREAM, 0);
         ft_bzero(&listenAddr, sizeof(listenAddr));
@@ -56,13 +111,11 @@ public:
         FD_SET(listenSock, &fds);
         fd_max = listenSock;
 
-        FD_ZERO(&writeSet);
+        FD_ZERO(&writeFDs);
 
         while(1)
         {
-            readSet = fds;
-            writeSet = fds;
-
+            readFDs = fds;
             
             timeout.tv_sec = 5;
             timeout.tv_usec = 5000;
@@ -72,7 +125,7 @@ public:
             2. writefds를 등록해 두었다면 쓰기(write)가능한 소켓이 있다면 계속 잡아줌.
             3. 둘 다 event가 없다면 timeout에 설정한 시간 동안 block되어 있다가 풀림.
             */
-            if ((fd_num = select(fd_max + 1, &readSet, &writeSet, 0, &timeout)) == -1)
+            if ((fd_num = select(fd_max + 1, &readFDs, &writeFDs, 0, &timeout)) == -1)
                 break;
 
             // std::cout << "After Select" << std::endl;
@@ -80,12 +133,14 @@ public:
             if (fd_num == 0)
                 continue;
 
-            if (FD_ISSET(listenSock, &readSet))
+            if (FD_ISSET(listenSock, &readFDs))
             {
+                Connection newConnection;
                 adr_sz = sizeof(clientAddr);
                 clientSock = accept(listenSock, (struct sockaddr*)&clientAddr, &adr_sz);
 
-                _ping.insert(std::pair<int, std::string>(clientSock, ""));
+                _connections.insert(std::pair<int, Connection>(clientSock, newConnection));
+                // _connections.insert(std::pair<int, std::string>(clientSock, ""));
 
                 fcntl(clientSock, F_SETFL, O_NONBLOCK);
                 FD_SET(clientSock, &fds);
@@ -94,50 +149,90 @@ public:
                 std::cout << "connected client: " << clientSock << std::endl;
             }
 
-            
-
-            for (int i = 0; i < fd_max + 1; ++i)
+            for (std::map<int, Connection>::iterator it = _connections.begin(); it != _connections.end(); ++it)
             {
-                // 1. readfd에 읽을 데이터가 있거나 2. 연결을 끊었을 때 FD_ISSET에 걸림
-                if (FD_ISSET(i, &readSet))
+                if (FD_ISSET(it->first, &readFDs))
                 {
-                    nread = read(i, buf, BUF_SIZE);
-                    if (nread == 0)
+
+                    std::cout << "HERE" << std::endl;
+                    if (it->second.readRequest(it->first) == 0 && it->second.getStatus() != READ_DONE)
                     {
-                        FD_CLR(i, &fds);
-                        close(i);
-                        std::cout << "closed client: " << i << std::endl;
-                        // continue;
+                        FD_CLR(it->first, &fds);
+                        close(it->first);
+                        std::cout << "closed client: " << it->first << std::endl;
+
+                        _connections.erase(it);
+                        break;
                     }
-                    else
+                    if (it->second.getStatus() == READ_DONE)
                     {
-                        // Read를 하여 객체에 저장
-                        _ping.find(i)->second += std::string(buf);
-                        std::cout << "read : " << _ping.find(i)->second << std::endl;
-                        bzero(&buf, BUF_SIZE);
+                        FD_SET(it->first, &writeFDs);
+                        it->second.buildResponse();
                     }
-                    // read를 할 때 마다 isRequestDone() ?-> response 생성
-                    // (하지만 요청이 중간에 잘려 있다면???)
                     continue;
                 }
 
-                /*
-                구현하려는 http서버와 다른 점 -> writeSet을 계속해서 잡는다. 이유는
-                read를 모두 완료하였을 때만 status플래그를 주어 writeSet에 추가한다.
-                write를 모두 완료하면 fd에서 제거하며 연결을 종료.
-                */
-                if (FD_ISSET(i, &writeSet))
+                
+
+                if (FD_ISSET(it->first, &writeFDs))
                 {
-                    if (_ping.find(i)->second != "")
+                    if (it->second.writeResponse(it->first) == 0)
                     {
-                        write(i, _ping.find(i)->second.c_str(), _ping.find(i)->second.length());
-                        _ping.find(i)->second = "";
-                        FD_CLR(i, &fds);
-                        close(i);
-                        std::cout << "closed client: " << i << std::endl;
+                        FD_CLR(it->first, &fds);    
+                        FD_CLR(it->first, &writeFDs);
+                        close(it->first);
+                        std::cout << "response sent, closed client: " << it->first << std::endl;
+
+                        _connections.erase(it);
+                        break;
                     }
                 }
             }
+
+            
+
+            // for (int i = 0; i < fd_max + 1; ++i)
+            // {
+            //     // 1. readfd에 읽을 데이터가 있거나 2. 연결을 끊었을 때 FD_ISSET에 걸림
+            //     if (FD_ISSET(i, &readFDs))
+            //     {
+            //         nread = read(i, buf, BUF_SIZE);
+            //         if (nread == 0)
+            //         {
+            //             FD_CLR(i, &fds);
+            //             close(i);
+            //             std::cout << "closed client: " << i << std::endl;
+            //             // continue;
+            //         }
+            //         else
+            //         {
+            //             // Read를 하여 객체에 저장
+            //             _connections.find(i)->second += std::string(buf);
+            //             std::cout << "read : " << _connections.find(i)->second << std::endl;
+            //             bzero(&buf, BUF_SIZE);
+            //         }
+            //         // read를 할 때 마다 isRequestDone() ?-> response 생성
+            //         // (하지만 요청이 중간에 잘려 있다면???)
+            //         continue;
+            //     }
+
+            //     /*
+            //     구현하려는 http서버와 다른 점 -> writeSet을 계속해서 잡는다. 이유는
+            //     read를 모두 완료하였을 때만 status플래그를 주어 writeSet에 추가한다.(또는 read하면 그냥 추가하고 continue를 넘기면 if(writeSet)에 들어오도록)
+            //     write를 모두 완료하면 fd에서 제거하며 연결을 종료.
+            //     */
+            //     if (FD_ISSET(i, &writeFDs))
+            //     {
+            //         if (_connections.find(i)->second != "")
+            //         {
+            //             write(i, _connections.find(i)->second.c_str(), _connections.find(i)->second.length());
+            //             _connections.find(i)->second = "";
+            //             FD_CLR(i, &fds);
+            //             close(i);
+            //             std::cout << "closed client: " << i << std::endl;
+            //         }
+            //     }
+            // }
         }
 
         close(listenSock);
