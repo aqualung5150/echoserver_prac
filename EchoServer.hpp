@@ -21,9 +21,11 @@ private:
     bool _status;
     std::string _request;
     std::string _response;
+    const char* _writeBuffer;
+    size_t _writeBufferLength, _writeBufferSent;
 public:
     Connection()
-    : _status(false), _request(""), _response("---RESPONSE---\n")
+    : _status(false), _request(""), _response("---RESPONSE---\n"), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0)
     {
     }
 
@@ -62,20 +64,36 @@ public:
         _response.append(_request);
         _response.erase(_response.find("\nEOF"), 4);
         _response.append("--------------");
+        _writeBuffer = _response.c_str();
+        _writeBufferLength = strlen(_writeBuffer);
+        _writeBufferSent = 0;
     }
     
     int writeResponse(int socket)
     {
-        size_t len = BUF_SIZE;
-        // const char *buf = _response.c_str();
+        // size_t len = BUF_SIZE;
 
-        if (_response.length() < BUF_SIZE)
-            len = _response.length();
+        // if (_response.length() < BUF_SIZE)
+        //     len = _response.length();
 
-        write(socket, _response.c_str(), len);
-        // write(socket, buf, len);
-        _response.erase(0, len);
-        if (_response.empty())
+        // write(socket, _response.c_str(), len);
+        // _response.erase(0, len);
+        // if (_response.empty())
+        //     return (0);
+        // return (1);
+
+        int len, nwrite, buf_left;
+
+        buf_left = _writeBufferLength - _writeBufferSent;
+        if (buf_left > BUF_SIZE)
+            len = BUF_SIZE;
+        else
+            len = buf_left;
+        
+        if ((nwrite = write(socket, _writeBuffer + _writeBufferSent, len)) <= 0)
+            return (-1);
+        _writeBufferSent += nwrite;
+        if (_writeBufferSent == _writeBufferLength)
             return (0);
         return (1);
     }
@@ -143,7 +161,7 @@ public:
                 continue;
 
             // listenSock에 이벤트가 발생했다면 해당 클라이언트를 accept()
-            // select는 최대 1024개의 fd만 검사함 -> 해결법??
+            // select는 최대 1024개의 fd만 검사함 -> select()대신 poll()을 이용하면 해결
             if (FD_ISSET(listenSock, &readSetCopy))
             {
                 Connection newConnection;
