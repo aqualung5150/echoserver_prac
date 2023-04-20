@@ -12,7 +12,7 @@
 #include <iostream>
 #include <map>
 
-#define BUF_SIZE 100
+#define BUF_SIZE 2
 #define READ_DONE true
 
 class Connection
@@ -43,27 +43,36 @@ public:
         else
         {
             _request.append(buf, nread);
-            bzero(&buf, BUF_SIZE);
         }
 
-        if (_request.find("aaa") != std::string::npos)
+        // http 요청 메세지의 CRLF / Content-Length / Transfer-Encoding 등을 확인하여 요청이 완료(READ_DONE)되었는지 확인한다.
+        if (_request.find("\nEOF\n") != std::string::npos)
         {
             _status = READ_DONE;
         }
         return (1);
     }
 
-    void buildResponse()
+    /*
+    makeResponse() :
+    CRLF / Content-Length / Transfer-Encoding 에 따른 요청의 READ_DONE이 끝났다면 응답을 만들기 시작한다.
+    */
+    void makeResponse()
     {
         _response.append(_request);
+        _response.erase(_response.find("\nEOF"), 4);
         _response.append("--------------");
-        std::cout << _response << std::endl;
     }
     
     int writeResponse(int socket)
     {
-        write(socket, _response.c_str(), BUF_SIZE);
-        _response.erase(0, BUF_SIZE);
+        size_t len = BUF_SIZE;
+
+        if (_response.length() < BUF_SIZE)
+            len = _response.length();
+
+        write(socket, _response.c_str(), len);
+        _response.erase(0, len);
         if (_response.empty())
             return (0);
         return (1);
@@ -153,21 +162,20 @@ public:
             {
                 if (FD_ISSET(it->first, &readFDs))
                 {
-
-                    std::cout << "HERE" << std::endl;
                     if (it->second.readRequest(it->first) == 0 && it->second.getStatus() != READ_DONE)
                     {
                         FD_CLR(it->first, &fds);
                         close(it->first);
-                        std::cout << "closed client: " << it->first << std::endl;
+                        std::cout << "cntl + c, closed client: " << it->first << std::endl;
 
+                        // std::map의 원소를 지우는 방법 다시 생각해보기...
                         _connections.erase(it);
                         break;
                     }
                     if (it->second.getStatus() == READ_DONE)
                     {
                         FD_SET(it->first, &writeFDs);
-                        it->second.buildResponse();
+                        it->second.makeResponse();
                     }
                     continue;
                 }
