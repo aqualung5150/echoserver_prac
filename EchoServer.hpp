@@ -67,11 +67,13 @@ public:
     int writeResponse(int socket)
     {
         size_t len = BUF_SIZE;
+        // const char *buf = _response.c_str();
 
         if (_response.length() < BUF_SIZE)
             len = _response.length();
 
         write(socket, _response.c_str(), len);
+        // write(socket, buf, len);
         _response.erase(0, len);
         if (_response.empty())
             return (0);
@@ -102,7 +104,7 @@ public:
         struct sockaddr_in listenAddr, clientAddr;
         struct timeval timeout;
 
-        fd_set fds, readFDs, writeFDs;
+        fd_set readSet, readSetCopy, writeSet, writeSetCopy;
 
         socklen_t adr_sz;
         int fd_max, fd_num;
@@ -114,18 +116,18 @@ public:
         listenAddr.sin_port = htons(port);
 
         bind(listenSock, (struct sockaddr*)&listenAddr, sizeof(listenAddr));
-        listen(listenSock, 5);
+        listen(listenSock, 512);
 
-        FD_ZERO(&fds);
-        FD_SET(listenSock, &fds);
+        FD_ZERO(&readSet);
+        FD_ZERO(&writeSet);
+        FD_SET(listenSock, &readSet);
         fd_max = listenSock;
-
-        FD_ZERO(&writeFDs);
 
         while(1)
         {
             // select() 이후에는 원본(fds)을 알 수 없으므로 readFDs에 복사하여 사용한다.
-            readFDs = fds;
+            readSetCopy = readSet;
+            writeSetCopy = writeSet;
             
             timeout.tv_sec = 5;
             timeout.tv_usec = 5000;
@@ -135,13 +137,14 @@ public:
             2. writefds를 등록해 두었다면 쓰기(write)가능한 소켓이 있다면 계속 잡아줌.
             3. 둘 다 event가 없다면 timeout에 설정한 시간 동안 block되어 있다가 풀림.
             */
-            if ((fd_num = select(fd_max + 1, &readFDs, &writeFDs, 0, &timeout)) == -1)
+            if ((fd_num = select(fd_max + 1, &readSetCopy, &writeSetCopy, 0, &timeout)) == -1)
                 break;
             if (fd_num == 0)
                 continue;
 
             // listenSock에 이벤트가 발생했다면 해당 클라이언트를 accept()
-            if (FD_ISSET(listenSock, &readFDs))
+            // select는 최대 1024개의 fd만 검사함 -> 해결법??
+            if (FD_ISSET(listenSock, &readSetCopy))
             {
                 Connection newConnection;
                 adr_sz = sizeof(clientAddr);
@@ -156,53 +159,85 @@ public:
                 */
                 fcntl(clientSock, F_SETFL, O_NONBLOCK);
 
-                FD_SET(clientSock, &fds);
+                FD_SET(clientSock, &readSet);
                 if (fd_max < clientSock)
                     fd_max = clientSock;
                 std::cout << "connected : " << clientSock << std::endl;
             }
 
-            for (std::map<int, Connection>::iterator it = _connections.begin(); it != _connections.end(); ++it)
+            std::map<int, Connection>::iterator it = _connections.begin();
+            while (it != _connections.end())
+            // for (std::map<int, Connection>::iterator it = _connections.begin(); it != _connections.end(); ++it)
             {
-                if (FD_ISSET(it->first, &readFDs))
+                if (FD_ISSET(it->first, &readSetCopy))
                 {
-                    // if (it->second.readRequest(it->first) == 0 && it->second.getStatus() != READ_DONE)
-                    if (it->second.readRequest(it->first) == 0)
+                    if (it->second.readRequest(it->first) <= 0)
                     {
-                        FD_CLR(it->first, &fds);
+                        FD_CLR(it->first, &readSet);
                         close(it->first);
                         std::cout << "cntl + c, connection closed : " << it->first << std::endl;
 
-                        // std::map의 원소를 지우는 방법 다시 생각해보기...
-                        _connections.erase(it);
-                        break;
+                        // fd_max를 새로 설정해주고 해당 원소 삭제
+                        if (it->first == fd_max)
+                        {
+                            std::map<int, Connection>::iterator it_cpy = it;
+                            if (it_cpy != _connections.begin())
+                            {
+                                --it_cpy;
+                                fd_max = it_cpy->first;
+                            }
+                            else
+                            {
+                                fd_max = listenSock;
+                            }
+                        }
+                        it = _connections.erase(it);
+                        continue;
                     }
                     if (it->second.getStatus() == READ_DONE)
                     {
-                        FD_SET(it->first, &writeFDs);
+                        FD_SET(it->first, &writeSet);
                         it->second.makeResponse();
                     }
+                    ++it;
                     continue;
                 }
 
                 
 
-                if (FD_ISSET(it->first, &writeFDs))
+                if (FD_ISSET(it->first, &writeSetCopy))
                 {
                     if (it->second.writeResponse(it->first) == 0)
                     {
-                        FD_CLR(it->first, &fds);    
-                        FD_CLR(it->first, &writeFDs);
+                        FD_CLR(it->first, &readSet);
+                        FD_CLR(it->first, &writeSet);
                         close(it->first);
                         std::cout << "response sent, connection closed : " << it->first << std::endl;
 
-                        _connections.erase(it);
-                        break;
+                        // fd_max를 새로 설정해주고 해당 원소 삭제
+                        if (it->first == fd_max)
+                        {
+                            std::map<int, Connection>::iterator it_cpy = it;
+                            if (it_cpy != _connections.begin())
+                            {
+                                --it_cpy;
+                                fd_max = it_cpy->first;
+                            }
+                            else
+                            {
+                                fd_max = listenSock;
+                            }
+                        }
+                        it = _connections.erase(it);
                     }
+                    else
+                        ++it;
+                    
+                    continue;
                 }
-            }
 
-            
+                ++it;
+            }
 
             // for (int i = 0; i < fd_max + 1; ++i)
             // {
