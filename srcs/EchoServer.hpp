@@ -15,7 +15,7 @@
 #define BUF_SIZE 2
 #define READ_DONE true
 
-class Response
+class Connection
 {
 private:
     // 요청 메시지
@@ -24,16 +24,19 @@ private:
     std::string _responseMessage;
     const char* _writeBuffer;
     size_t _writeBufferLength, _writeBufferSent;
+    
     // 요청 메시지 속성
     bool _readDone;
     int _method;
     std::string _target;
     bool transferCodingChunk;
     int _contentLength;
+    // ...
     // 응답 메시지 속성
     int _statusCode;
+    // ...
 public:
-    Response()
+    Connection()
     : _readDone(false), _requestMessage(""), _responseMessage("---RESPONSE---\n"), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0)
     {
     }
@@ -105,17 +108,6 @@ public:
         if (_writeBufferSent == _writeBufferLength)
             return (0);
         return (1);
-    }
-};
-
-class Connection
-{
-private:
-    Response _response;
-public:
-    Response& getResponse()
-    {
-        return _response;
     }
 };
 
@@ -198,12 +190,13 @@ public:
                 if (FD_ISSET(it->first, &readSetCopy))
                 {
                     // 소켓 읽기 및 연결 종료
-                    if (it->second.getResponse().readRequest(it->first) <= 0)
+                    if (it->second.readRequest(it->first) <= 0)
                     {
+                        // 연결 종료
                         FD_CLR(it->first, &readSet);
                         close(it->first);
                         std::cout << "cntl + c, connection closed : " << it->first << std::endl;
-
+                        // 원소 삭제
                         if (it->first == fd_max)
                         {
                             std::map<int, Connection>::iterator it_cpy = it;
@@ -221,10 +214,10 @@ public:
                         continue;
                     }
                     // 읽기 완료 후 응답메시지 작성
-                    if (it->second.getResponse().isReadDone() == READ_DONE)
+                    if (it->second.isReadDone() == READ_DONE)
                     {
                         FD_SET(it->first, &writeSet);
-                        it->second.getResponse().makeResponse();
+                        it->second.makeResponse();
                     }
                     ++it;
                     continue;
@@ -233,13 +226,15 @@ public:
                 // 메시지 전송
                 if (FD_ISSET(it->first, &writeSetCopy))
                 {
-                    if (it->second.getResponse().writeResponse(it->first) == 0)
+                    // 전송 및 연결 종료
+                    if (it->second.writeResponse(it->first) == 0)
                     {
+                        // 연결 종료
                         FD_CLR(it->first, &readSet);
                         FD_CLR(it->first, &writeSet);
                         close(it->first);
                         std::cout << "response sent, connection closed : " << it->first << std::endl;
-
+                        // 원소 삭제
                         if (it->first == fd_max)
                         {
                             std::map<int, Connection>::iterator it_cpy = it;
