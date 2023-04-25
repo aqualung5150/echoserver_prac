@@ -11,8 +11,12 @@
 
 #include <iostream>
 #include <map>
+#include <fstream>
+#include <sstream>
 
-#define BUF_SIZE 2
+#include <ctime>
+
+#define BUF_SIZE 8192
 #define READ_DONE true
 
 class Connection
@@ -37,7 +41,7 @@ private:
     // ...
 public:
     Connection()
-    : _readDone(false), _requestMessage(""), _responseMessage("---RESPONSE---\n"), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0)
+    : _readDone(false), _requestMessage(""), _responseMessage(""), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0)
     {
     }
 
@@ -65,31 +69,51 @@ public:
 
     void makeResponse()
     {
+        // 로컬 파일 처리 시간
+        long makeGB;
+        struct timeval start, end;
+        gettimeofday(&start, NULL);
+
         char buf[102];
         int fileFD, nread;
 
         //요청 메시지 분석
-        if (_requestMessage.find("GET ./index.txt") != std::string::npos)
+        if (_requestMessage.find("GET image") != std::string::npos)
         {
-            fileFD = open("./index.txt", O_RDONLY);
-            nread = read(fileFD, buf, 102);
-            _responseMessage.append(buf, nread);
-            if (nread == 0)
-                return ;
-            else if (nread == -1)
+            // C style using read()
+            // fileFD = open("./index.txt", O_RDONLY);
+            // nread = read(fileFD, buf, 102);
+            // _responseMessage.append(buf, nread);
+            // if (nread == 0)
+            //     return ;
+            // else if (nread == -1)
+            // {
+            //     //_status code = XXX
+            // }
+
+            std::ifstream file;
+            std::stringstream buf;
+
+            file.open("./index.jpeg");
+            if (file.fail())
             {
-                //_status code = XXX
+                // file not found
+                std::cout << "file not found." << std::endl;
+                return ;
             }
+            buf << file.rdbuf();
+            _responseMessage.append(buf.str());
         }
         else
-        {
             _responseMessage.append("No GET Method.");
-            std::cout << "Here : " << _responseMessage << std::endl;
-        }
-        _responseMessage.append("\n--------------");
+        _writeBufferLength = _responseMessage.length();
         _writeBuffer = _responseMessage.c_str();
-        _writeBufferLength = strlen(_writeBuffer);
         _writeBufferSent = 0;
+
+        // 로컬 파일 처리 시간
+        gettimeofday(&end, NULL);
+        makeGB = end.tv_usec - start.tv_usec;
+        std::cout << makeGB << std::endl;
     }
 
     int writeResponse(int socket)
