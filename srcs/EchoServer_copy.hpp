@@ -80,39 +80,35 @@ public:
         ssize_t nread;
 
         //요청 메시지 분석
+        if (_payloadFD < 0 && _requestMessage.find("GET image") != std::string::npos)
+            _payloadFD = open("./GB.bmp", O_RDONLY);
+        else if (_payloadFD < 0)
+            _responseMessage.append("No GET Method.");
+            nread = 0;
+
         if (_payloadFD > 0)
         {
             nread = read(_payloadFD, buf, BUF_SIZE);
 
             if (nread > 0)
-            {
                 _responseMessage.append(buf, nread);
-                return nread;
-            }
-            else if (nread < 0)
-                return -1;
             else if (nread == 0)
             {
                 close(_payloadFD);
                 _payloadFD = -1;
-                _payloadDone = true;
-                _writeBufferLength = _responseMessage.length();
-                _writeBuffer = _responseMessage.c_str();
-                _writeBufferSent = 0;
             }
         }
-        else if (_requestMessage.find("GET image") != std::string::npos)
-            _payloadFD = open("./index.jpeg", O_RDONLY);
-        else
+        
+        if (nread == 0)
         {
-            _responseMessage.append("No GET Method.");
+            _payloadDone = true;
             _writeBufferLength = _responseMessage.length();
             _writeBuffer = _responseMessage.c_str();
             _writeBufferSent = 0;
-            _payloadDone = true;
         }
+        
 
-        return 1;
+        return nread;
     }
 
     int writeResponse(int socket)
