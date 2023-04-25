@@ -28,6 +28,8 @@ private:
     std::string _responseMessage;
     const char* _writeBuffer;
     size_t _writeBufferLength, _writeBufferSent;
+    int _payloadFD;
+    bool _payloadDone;
     
     // 요청 메시지 속성
     bool _readDone;
@@ -41,7 +43,7 @@ private:
     // ...
 public:
     Connection()
-    : _readDone(false), _requestMessage(""), _responseMessage(""), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0)
+    : _readDone(false), _requestMessage(""), _responseMessage(""), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0), _payloadFD(-1), _payloadDone(false)
     {
     }
 
@@ -67,54 +69,48 @@ public:
         return (_readDone);
     }
 
-    void makeResponse()
+    bool isPayloadDone()
     {
-        // 로컬 파일 처리 시간
-        double makeGB;
-        struct timeval start, end;
-        gettimeofday(&start, NULL);
+        return (_payloadDone);
+    }
 
-        char buf[102];
-        int fileFD, nread;
+    ssize_t makeResponse()
+    {
+        char buf[BUF_SIZE];
+        ssize_t nread;
 
         //요청 메시지 분석
-        if (_requestMessage.find("GET image") != std::string::npos)
+        if (_payloadFD > 0)
         {
-            // C style using read()
-            // fileFD = open("./index.txt", O_RDONLY);
-            // nread = read(fileFD, buf, 102);
-            // _responseMessage.append(buf, nread);
-            // if (nread == 0)
-            //     return ;
-            // else if (nread == -1)
-            // {
-            //     //_status code = XXX
-            // }
+            nread = read(_payloadFD, buf, BUF_SIZE);
 
-            std::ifstream file;
-            std::stringstream buf;
-
-            // file.open("./index.jpeg");
-            file.open("GB.bmp");
-            if (file.fail())
+            if (nread > 0)
             {
-                // file not found
-                std::cout << "file not found." << std::endl;
-                return ;
+                _responseMessage.append(buf, nread);
+                return nread;
             }
-            buf << file.rdbuf();
-            _responseMessage.append(buf.str());
+            else if (nread < 0)
+                return -1;
+            else if (nread == 0)
+            {
+                _payloadDone = true;
+                _writeBufferLength = _responseMessage.length();
+                _writeBuffer = _responseMessage.c_str();
+                _writeBufferSent = 0;
+            }
         }
+        else if (_requestMessage.find("GET image") != std::string::npos)
+            _payloadFD = open("./index.jpeg", O_RDONLY);
         else
+        {
             _responseMessage.append("No GET Method.");
-        _writeBufferLength = _responseMessage.length();
-        _writeBuffer = _responseMessage.c_str();
-        _writeBufferSent = 0;
+            _writeBufferLength = _responseMessage.length();
+            _writeBuffer = _responseMessage.c_str();
+            _writeBufferSent = 0;
+            _payloadDone = true;
+        }
 
-        // 로컬 파일 처리 시간
-        gettimeofday(&end, NULL);
-        makeGB = (end.tv_sec - start.tv_sec) + (((double)end.tv_usec - (double)start.tv_usec) / (double)1000000);
-        std::cout << makeGB << "sec" << std::endl;
+        return 1;
     }
 
     int writeResponse(int socket)
@@ -238,19 +234,19 @@ public:
                         it = _connections.erase(it);
                         continue;
                     }
-                    // 읽기 완료 후 응답메시지 작성
                     if (it->second.isReadDone() == READ_DONE)
-                    {
-                        it->second.makeResponse();
                         FD_SET(it->first, &writeSet);
-                    }
-                    ++it;
-                    continue;
                 }
 
                 // 메시지 전송
                 if (FD_ISSET(it->first, &writeSetCopy))
                 {
+                    if (it->second.isPayloadDone() == false)
+                    {
+                        it->second.makeResponse();
+                        ++it;
+                        continue;
+                    }
                     // 전송 및 연결 종료
                     if (it->second.writeResponse(it->first) == 0)
                     {
