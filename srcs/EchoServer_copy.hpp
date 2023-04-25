@@ -93,6 +93,8 @@ public:
                 return -1;
             else if (nread == 0)
             {
+                close(_payloadFD);
+                _payloadFD = -1;
                 _payloadDone = true;
                 _writeBufferLength = _responseMessage.length();
                 _writeBuffer = _responseMessage.c_str();
