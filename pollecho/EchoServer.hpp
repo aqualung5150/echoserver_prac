@@ -18,7 +18,7 @@
 
 #include <poll.h>
 
-#define BUF_SIZE 8192
+#define BUF_SIZE 2
 #define READ_DONE true
 #define OPEN_MAX 1024
 
@@ -31,22 +31,11 @@ private:
     std::string _responseMessage;
     const char* _writeBuffer;
     size_t _writeBufferLength, _writeBufferSent;
-    int _payloadFD;
-    bool _payloadDone;
-    
-    // 요청 메시지 속성
-    bool _readDone;
-    int _method;
-    std::string _target;
-    bool transferCodingChunk;
-    int _contentLength;
-    // ...
-    // 응답 메시지 속성
-    int _statusCode;
-    // ...
+    int _readDone;
+
 public:
     Connection()
-    : _readDone(false), _requestMessage(""), _responseMessage(""), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0), _payloadFD(-1), _payloadDone(false)
+    : _readDone(false), _requestMessage(""), _responseMessage("---RESPONSE---\n"), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0)
     {
     }
 
@@ -56,12 +45,13 @@ public:
         int nread;
 
         nread = read(socket, buf, BUF_SIZE);
+
         if (nread == 0 || nread == -1)
             return (0);
         else
             _requestMessage.append(buf, nread);
 
-        // http 요청 메세지의 CRLF / Content-Length / Transfer-Encoding 등을 확인하여 요청이 완료(READ_DONE)되었는지 확인한다.
+        // CRLF(delimter)를 찾았다면 메시지 읽기 완료
         if (_requestMessage.find("\nEOF\n") != std::string::npos)
             _readDone = READ_DONE;
         return (1);
@@ -72,46 +62,13 @@ public:
         return (_readDone);
     }
 
-    bool isPayloadDone()
+    void makeResponse()
     {
-        return (_payloadDone);
-    }
+        _responseMessage.append(_requestMessage + "--------------\n");
 
-    ssize_t makeResponse()
-    {
-        char buf[BUF_SIZE];
-        ssize_t nread;
-
-        //요청 메시지 분석
-        if (_payloadFD < 0 && _requestMessage.find("GET image") != std::string::npos)
-            _payloadFD = open("./GB.bmp", O_RDONLY);
-        else if (_payloadFD < 0)
-            _responseMessage.append("No GET Method.");
-            nread = 0;
-
-        if (_payloadFD > 0)
-        {
-            nread = read(_payloadFD, buf, BUF_SIZE);
-
-            if (nread > 0)
-                _responseMessage.append(buf, nread);
-            else if (nread == 0)
-            {
-                close(_payloadFD);
-                _payloadFD = -1;
-            }
-        }
-        
-        if (nread == 0)
-        {
-            _payloadDone = true;
-            _writeBufferLength = _responseMessage.length();
-            _writeBuffer = _responseMessage.c_str();
-            _writeBufferSent = 0;
-        }
-        
-
-        return nread;
+        _writeBufferLength = _responseMessage.length();
+        _writeBuffer = _responseMessage.c_str();
+        _writeBufferSent = 0;
     }
 
     int writeResponse(int socket)
@@ -125,10 +82,18 @@ public:
             len = buf_left;
         
         if ((nwrite = write(socket, _writeBuffer + _writeBufferSent, len)) <= 0)
-            return (-1);
+            return (-1); //error
         _writeBufferSent += nwrite;
         if (_writeBufferSent == _writeBufferLength)
+        // 전송완료 했다면 클라이언트의 정보(메시지)를 초기화 해줌다
+        {
+            _readDone = false;
+            _responseMessage.clear();
+            _requestMessage.clear();
+            _responseMessage.append("---RESPONSE---\n");
             return (0);
+        }
+        // 아직 전송하는 중
         return (1);
     }
 };
@@ -170,7 +135,6 @@ public:
         bind(listenSock, (struct sockaddr*)&listenAddr, sizeof(listenAddr));
         listen(listenSock, 512);
 
-        /////////////
         client[0].fd = listenSock;
         client[0].events = POLLIN;
 
@@ -208,63 +172,22 @@ public:
 
                 if (i > maxi)
                     maxi = i;
-                // if (--polled <= 0)
-                //     continue;
 
                 std::cout << "connected : " << clientSock << std::endl;
                 continue;
             }
 
-            std::cout << "maxi : " << maxi << std::endl;
-
-            // for (i = 1; i <= maxi; ++i)
-            // {
-            //     if (client[i].fd < 0)
-            //         continue;
-            //     if (client[i].revents & (POLLIN | POLLERR))
-            //     {
-            //         ssize_t nread;
-            //         char buf[BUF_SIZE];
-            //         if ((nread = read(client[i].fd, buf, BUF_SIZE)) <= 0)
-            //         {
-            //             std::cout << "can not read" << std::endl;
-            //             close(client[i].fd);
-            //             client[i].fd = -1;
-            //             //원소 삭제
-            //             // if (it->first == maxi)
-            //             // {
-            //             //     std::map<int, Connection>::iterator it_cpy = it;
-            //             //     if (it_cpy != _connections.begin())
-            //             //     {
-            //             //         --it_cpy;
-            //             //         maxi = it_cpy->first;
-            //             //     }
-            //             //     else
-            //             //     {
-            //             //         maxi = 0;
-            //             //     }
-            //             // }
-            //             // std::cout << "distconnected index : " << it->first << std::endl;
-            //             // it = _connections.erase(it);
-            //             // continue;
-            //         }
-            //         else
-            //             write(client[i].fd, buf, nread);
-            //     }
-            // }
+            std::cout << "largest index : " << maxi << std::endl;
 
             int count = 0;
+            //map< poll_index, Connection>
             std::map<int, Connection>::iterator it = _connections.begin();
             while (it != _connections.end())
             {
                 ++count;
-                // if (client[it->first].fd < 0)
-                //     continue;
                 if (client[it->first].revents & (POLLIN | POLLERR))
                 {
-                    ssize_t nread;
-                    char buf[BUF_SIZE];
-                    if ((nread = read(client[it->first].fd, buf, BUF_SIZE)) <= 0)
+                    if (it->second.readRequest(client[it->first].fd) <= 0)
                     {
                         std::cout << "can not read" << std::endl;
                         close(client[it->first].fd);
@@ -279,20 +202,27 @@ public:
                                 maxi = it_cpy->first;
                             }
                             else
-                            {
                                 maxi = 0;
-                            }
                         }
                         std::cout << "distconnected index : " << it->first << std::endl;
                         it = _connections.erase(it);
                         continue;
                     }
-                    else
-                        write(client[it->first].fd, buf, nread);
+                    if (it->second.isReadDone() == READ_DONE)
+                    {
+                        it->second.makeResponse();
+                        client[it->first].events = POLLOUT;
+                    }
+                }
+
+                if (client[it->first].revents & POLLOUT)
+                {
+                    if (it->second.writeResponse(client[it->first].fd) == 0)
+                        client[it->first].events = POLLIN;
                 }
                 ++it;
             }
-            std::cout << "loop count : " << count << std::endl;
+            std::cout << "number of client : " << count << std::endl;
         }
     }
 };
