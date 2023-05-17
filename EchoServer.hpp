@@ -34,7 +34,7 @@ public:
         return _status;
     }
 
-    int readRequest(int socket)
+    int readCommand(int socket)
     {
         char buf[BUF_SIZE];
         int nread;
@@ -59,7 +59,7 @@ public:
     makeResponse() :
     CRLF / Content-Length / Transfer-Encoding 에 따른 요청의 READ_DONE이 끝났다면 응답을 만들기 시작한다.
     */
-    void makeResponse()
+    void makeReply()
     {
         _response.append(_request);
         _response.erase(_response.find("\nEOF"), 4);
@@ -69,7 +69,7 @@ public:
         _writeBufferSent = 0;
     }
     
-    int writeResponse(int socket)
+    int writeReply(int socket)
     {
         // size_t len = BUF_SIZE;
 
@@ -193,7 +193,7 @@ public:
             {
                 if (FD_ISSET(it->first, &readSetCopy))
                 {
-                    if (it->second.readRequest(it->first) <= 0)
+                    if (it->second.readCommand(it->first) <= 0)
                     {
                         FD_CLR(it->first, &readSet);
                         close(it->first);
@@ -219,7 +219,7 @@ public:
                     if (it->second.getStatus() == READ_DONE)
                     {
                         FD_SET(it->first, &writeSet);
-                        it->second.makeResponse();
+                        it->second.makeReply();
                     }
                     ++it;
                     continue;
@@ -229,7 +229,7 @@ public:
 
                 if (FD_ISSET(it->first, &writeSetCopy))
                 {
-                    if (it->second.writeResponse(it->first) == 0)
+                    if (it->second.writeReply(it->first) == 0)
                     {
                         FD_CLR(it->first, &readSet);
                         FD_CLR(it->first, &writeSet);

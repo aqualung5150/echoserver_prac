@@ -23,9 +23,9 @@ class Connection
 {
 private:
     // 요청 메시지
-    std::string _requestMessage;
+    std::string _clientCommand;
     // 응답 메시지
-    std::string _responseMessage;
+    std::string _serverReply;
     const char* _writeBuffer;
     size_t _writeBufferLength, _writeBufferSent;
     int _payloadFD;
@@ -43,11 +43,11 @@ private:
     // ...
 public:
     Connection()
-    : _readDone(false), _requestMessage(""), _responseMessage(""), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0), _payloadFD(-1), _payloadDone(false)
+    : _readDone(false), _clientCommand(""), _serverReply(""), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0), _payloadFD(-1), _payloadDone(false)
     {
     }
 
-    int readRequest(int socket)
+    int readCommand(int socket)
     {
         char buf[BUF_SIZE];
         int nread;
@@ -56,10 +56,10 @@ public:
         if (nread == 0 || nread == -1)
             return (0);
         else
-            _requestMessage.append(buf, nread);
+            _clientCommand.append(buf, nread);
 
         // http 요청 메세지의 CRLF / Content-Length / Transfer-Encoding 등을 확인하여 요청이 완료(READ_DONE)되었는지 확인한다.
-        if (_requestMessage.find("\nEOF\n") != std::string::npos)
+        if (_clientCommand.find("\nEOF\n") != std::string::npos)
             _readDone = READ_DONE;
         return (1);
     }
@@ -80,10 +80,10 @@ public:
         ssize_t nread;
 
         //요청 메시지 분석
-        if (_payloadFD < 0 && _requestMessage.find("GET image") != std::string::npos)
+        if (_payloadFD < 0 && _clientCommand.find("GET image") != std::string::npos)
             _payloadFD = open("./GB.bmp", O_RDONLY);
         else if (_payloadFD < 0)
-            _responseMessage.append("No GET Method.");
+            _serverReply.append("No GET Method.");
             nread = 0;
 
         if (_payloadFD > 0)
@@ -91,7 +91,7 @@ public:
             nread = read(_payloadFD, buf, BUF_SIZE);
 
             if (nread > 0)
-                _responseMessage.append(buf, nread);
+                _serverReply.append(buf, nread);
             else if (nread == 0)
             {
                 close(_payloadFD);
@@ -102,8 +102,8 @@ public:
         if (nread == 0)
         {
             _payloadDone = true;
-            _writeBufferLength = _responseMessage.length();
-            _writeBuffer = _responseMessage.c_str();
+            _writeBufferLength = _serverReply.length();
+            _writeBuffer = _serverReply.c_str();
             _writeBufferSent = 0;
         }
         
@@ -111,7 +111,7 @@ public:
         return nread;
     }
 
-    int writeResponse(int socket)
+    int writeReply(int socket)
     {
         int len, nwrite, buf_left;
 
@@ -209,7 +209,7 @@ public:
                 if (FD_ISSET(it->first, &readSetCopy))
                 {
                     // 소켓 읽기 및 연결 종료
-                    if (it->second.readRequest(it->first) <= 0)
+                    if (it->second.readCommand(it->first) <= 0)
                     {
                         // 연결 종료
                         FD_CLR(it->first, &readSet);
@@ -246,7 +246,7 @@ public:
                         continue;
                     }
                     // 전송 및 연결 종료
-                    if (it->second.writeResponse(it->first) == 0)
+                    if (it->second.writeReply(it->first) == 0)
                     {
                         // 연결 종료
                         FD_CLR(it->first, &readSet);

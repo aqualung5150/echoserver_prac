@@ -26,20 +26,20 @@ class Connection
 {
 private:
     // 요청 메시지
-    std::string _requestMessage;
+    std::string _clientCommand;
     // 응답 메시지
-    std::string _responseMessage;
+    std::string _serverReply;
     const char* _writeBuffer;
     size_t _writeBufferLength, _writeBufferSent;
     int _readDone;
 
 public:
     Connection()
-    : _readDone(false), _requestMessage(""), _responseMessage("---RESPONSE---\n"), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0)
+    : _readDone(false), _clientCommand(""), _serverReply("---RESPONSE---\n"), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0)
     {
     }
 
-    int readRequest(int socket)
+    int readCommand(int socket)
     {
         char buf[BUF_SIZE];
         int nread;
@@ -49,10 +49,10 @@ public:
         if (nread == 0 || nread == -1)
             return (0);
         else
-            _requestMessage.append(buf, nread);
+            _clientCommand.append(buf, nread);
 
         // CRLF(delimter)를 찾았다면 메시지 읽기 완료
-        if (_requestMessage.find("\nEOF\n") != std::string::npos)
+        if (_clientCommand.find("\nEOF\n") != std::string::npos)
             _readDone = READ_DONE;
         return (1);
     }
@@ -62,16 +62,16 @@ public:
         return (_readDone);
     }
 
-    void makeResponse()
+    void makeReply()
     {
-        _responseMessage.append(_requestMessage + "--------------\n");
+        _serverReply.append(_clientCommand + "--------------\n");
 
-        _writeBufferLength = _responseMessage.length();
-        _writeBuffer = _responseMessage.c_str();
+        _writeBufferLength = _serverReply.length();
+        _writeBuffer = _serverReply.c_str();
         _writeBufferSent = 0;
     }
 
-    int writeResponse(int socket)
+    int writeReply(int socket)
     {
         int len, nwrite, buf_left;
 
@@ -88,9 +88,9 @@ public:
         // 전송완료 했다면 클라이언트의 정보(메시지)를 초기화 해줌다
         {
             _readDone = false;
-            _responseMessage.clear();
-            _requestMessage.clear();
-            _responseMessage.append("---RESPONSE---\n");
+            _serverReply.clear();
+            _clientCommand.clear();
+            _serverReply.append("---RESPONSE---\n");
             return (0);
         }
         // 아직 전송하는 중
@@ -187,7 +187,7 @@ public:
                 ++count;
                 if (client[it->first].revents & (POLLIN | POLLERR))
                 {
-                    if (it->second.readRequest(client[it->first].fd) <= 0)
+                    if (it->second.readCommand(client[it->first].fd) <= 0)
                     {
                         std::cout << "can not read" << std::endl;
                         close(client[it->first].fd);
@@ -210,14 +210,14 @@ public:
                     }
                     if (it->second.isReadDone() == READ_DONE)
                     {
-                        it->second.makeResponse();
+                        it->second.makeReply();
                         client[it->first].events = POLLOUT;
                     }
                 }
 
                 if (client[it->first].revents & POLLOUT)
                 {
-                    if (it->second.writeResponse(client[it->first].fd) == 0)
+                    if (it->second.writeReply(client[it->first].fd) == 0)
                         client[it->first].events = POLLIN;
                 }
                 ++it;
