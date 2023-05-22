@@ -40,11 +40,18 @@ private:
     //USER
     std::string _username; // first parameter of USER command
     std::string _realname; // last parameter of USER command
+    // Invited Channel
+    std::vector<Channel> _invited;
 
 public:
     void setSocket(int fd)
     {
         _socket = fd;
+    }
+
+    int getSocket()
+    {
+        return _socket;
     }
 
     User()
@@ -115,9 +122,37 @@ class Channel
 {
 private:
     std::map<int, User> _users; // Joined users
-    User* _operator; // Operator of this channel
+    std::vector<User> _operators; // Operators of this channel
+
     std::string _topic; // Channel's topic
-    int _mode; //Channel's mode
+
+    // MODE
+    bool _inviteOnly; // default : false (MODE i)
+    bool _restrictedTopic; // defualt : true (MODE t)
+    std::string _password; // defualt : ""(false) - empty string (MODE k [password])
+    
+    /*
+    MODE
+    
+    k : Set/remove the channel key (password).
+    반드시 파라미터(패스워드)를 받아야 함.
+
+    ! MODE #channel -k wrong-password 일 경우
+    :irc.local 467 seunchoi #tradis :Channel key already set 라는 reply를 받음.
+
+    -k 하려면 올바른 password를 파라미터로 받아야 함.
+
+
+    o : Give/take channel operator privilege.
+    채널 오퍼레이터라면 누구든지 +/- o 할 수 있음
+    */ 
+public:
+    Channel(User &creater)
+    : _topic(""), _inviteOnly(false), _restrictedTopic(true), _password("")
+    {
+        _users.insert(std::pair<int, User>(creater.getSocket(), creater));
+        _operators.push_back(creater);
+    }
 };
 
 class EchoServer
@@ -125,6 +160,7 @@ class EchoServer
 private:
     std::map<int, User> _users;
     std::vector<Channel> _channels;
+    std::string _password;
 public:
     static void ft_bzero(void *s, size_t n)
     {
