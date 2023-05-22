@@ -21,7 +21,8 @@
 
 #define BUF_SIZE 512
 #define READ_DONE true
-#define OPEN_MAX 1024
+
+class Channel;
 
 class User
 {
@@ -133,7 +134,7 @@ private:
     
     /*
     MODE
-    
+
     k : Set/remove the channel key (password).
     반드시 파라미터(패스워드)를 받아야 함.
 
@@ -142,6 +143,7 @@ private:
 
     -k 하려면 올바른 password를 파라미터로 받아야 함.
 
+    -------------------------------------------------------------------------
 
     o : Give/take channel operator privilege.
     채널 오퍼레이터라면 누구든지 +/- o 할 수 있음
