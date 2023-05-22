@@ -22,7 +22,7 @@
 #define READ_DONE true
 #define OPEN_MAX 1024
 
-class Connection
+class User
 {
 private:
     // 요청 메시지
@@ -34,7 +34,7 @@ private:
     int _readDone;
 
 public:
-    Connection()
+    User()
     : _readDone(false), _clientCommand(""), _serverReply("---RESPONSE---\n"), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0)
     {
     }
@@ -101,7 +101,7 @@ public:
 class EchoServer
 {
 private:
-    std::map<int, Connection> _connections;
+    std::map<int, User> _users;
 public:
     static void ft_bzero(void *s, size_t n)
     {
@@ -165,8 +165,8 @@ public:
                     exit(0);
                 }
 
-                Connection newConnection;
-                _connections.insert(std::pair<int, Connection>(i, newConnection));
+                User newConnection;
+                _users.insert(std::pair<int, User>(i, newConnection));
 
                 client[i].events = POLLIN;
 
@@ -181,8 +181,8 @@ public:
 
             int count = 0;
             //map< poll_index, Connection>
-            std::map<int, Connection>::iterator it = _connections.begin();
-            while (it != _connections.end())
+            std::map<int, User>::iterator it = _users.begin();
+            while (it != _users.end())
             {
                 ++count;
                 if (client[it->first].revents & (POLLIN | POLLERR))
@@ -195,8 +195,8 @@ public:
                         // 원소 삭제
                         if (it->first == maxi)
                         {
-                            std::map<int, Connection>::iterator it_cpy = it;
-                            if (it_cpy != _connections.begin())
+                            std::map<int, User>::iterator it_cpy = it;
+                            if (it_cpy != _users.begin())
                             {
                                 --it_cpy;
                                 maxi = it_cpy->first;
@@ -205,7 +205,7 @@ public:
                                 maxi = 0;
                         }
                         std::cout << "distconnected index : " << it->first << std::endl;
-                        it = _connections.erase(it);
+                        it = _users.erase(it);
                         continue;
                     }
                     if (it->second.isReadDone() == READ_DONE)

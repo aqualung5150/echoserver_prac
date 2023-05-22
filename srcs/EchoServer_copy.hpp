@@ -19,7 +19,7 @@
 #define BUF_SIZE 8192
 #define READ_DONE true
 
-class Connection
+class User
 {
 private:
     // 요청 메시지
@@ -42,7 +42,7 @@ private:
     int _statusCode;
     // ...
 public:
-    Connection()
+    User()
     : _readDone(false), _clientCommand(""), _serverReply(""), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0), _payloadFD(-1), _payloadDone(false)
     {
     }
@@ -133,7 +133,7 @@ public:
 class EchoServer
 {
 private:
-    std::map<int, Connection> _connections;
+    std::map<int, User> _users;
 public:
     static void ft_bzero(void *s, size_t n)
     {
@@ -189,11 +189,11 @@ public:
             // 클라이언트 연결
             if (FD_ISSET(listenSock, &readSetCopy))
             {
-                Connection newConnection;
+                User newConnection;
                 clientAddrSize = sizeof(clientAddr);
                 clientSock = accept(listenSock, (struct sockaddr*)&clientAddr, &clientAddrSize);
 
-                _connections.insert(std::pair<int, Connection>(clientSock, newConnection));
+                _users.insert(std::pair<int, User>(clientSock, newConnection));
 
                 fcntl(clientSock, F_SETFL, O_NONBLOCK);
 
@@ -203,8 +203,8 @@ public:
                 std::cout << "connected : " << clientSock << std::endl;
             }
 
-            std::map<int, Connection>::iterator it = _connections.begin();
-            while (it != _connections.end())
+            std::map<int, User>::iterator it = _users.begin();
+            while (it != _users.end())
             {
                 if (FD_ISSET(it->first, &readSetCopy))
                 {
@@ -218,8 +218,8 @@ public:
                         // 원소 삭제
                         if (it->first == fd_max)
                         {
-                            std::map<int, Connection>::iterator it_cpy = it;
-                            if (it_cpy != _connections.begin())
+                            std::map<int, User>::iterator it_cpy = it;
+                            if (it_cpy != _users.begin())
                             {
                                 --it_cpy;
                                 fd_max = it_cpy->first;
@@ -229,7 +229,7 @@ public:
                                 fd_max = listenSock;
                             }
                         }
-                        it = _connections.erase(it);
+                        it = _users.erase(it);
                         continue;
                     }
                     if (it->second.isReadDone() == READ_DONE)
@@ -256,8 +256,8 @@ public:
                         // 원소 삭제
                         if (it->first == fd_max)
                         {
-                            std::map<int, Connection>::iterator it_cpy = it;
-                            if (it_cpy != _connections.begin())
+                            std::map<int, User>::iterator it_cpy = it;
+                            if (it_cpy != _users.begin())
                             {
                                 --it_cpy;
                                 fd_max = it_cpy->first;
@@ -267,7 +267,7 @@ public:
                                 fd_max = listenSock;
                             }
                         }
-                        it = _connections.erase(it);
+                        it = _users.erase(it);
                     }
                     else
                         ++it;

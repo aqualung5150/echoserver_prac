@@ -19,24 +19,29 @@
 #include <poll.h>
 #include <vector>
 
-#define BUF_SIZE 2
+#define BUF_SIZE 512
 #define READ_DONE true
 #define OPEN_MAX 1024
 
-class Connection
+class User
 {
 private:
-    // 요청 메시지
+    // Command
     std::string _clientCommand;
-    // 응답 메시지
+    // Reply
     std::string _serverReply;
     const char* _writeBuffer;
     size_t _writeBufferLength, _writeBufferSent;
     int _readDone;
+    // NICK
+    std::string _nick;
+    //USER
+    std::string _username; // first parameter of USER command
+    std::string _realname; // last parameter of USER command
 
 public:
-    Connection()
-    : _readDone(false), _clientCommand(""), _serverReply("---RESPONSE---\n"), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0)
+    User()
+    : _readDone(false), _clientCommand(""), _serverReply("---RESPONSE---\n"), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0), _nick(""), _username(""), _realname("")
     {
     }
 
@@ -99,12 +104,20 @@ public:
     }
 };
 
+class Channel
+{
+private:
+    std::map<int, User> _users; // Joined users
+    User* _operator; // Operator of this channel
+    std::string _topic; // Channel's topic
+    int _mode; //Channel's mode
+};
+
 class EchoServer
 {
 private:
-    // std::vector<struct pollfd> _client;
-    std::map<int, Connection> _connections;
-    // std::vector<Connection> _connections;
+    std::map<int, User> _users;
+    std::vector<Channel> _channels;
 public:
     static void ft_bzero(void *s, size_t n)
     {
@@ -126,7 +139,7 @@ public:
         socklen_t clientAddrSize;
         int polled;
 
-        std::vector<struct pollfd> client;
+        std::vector<struct pollfd> pollFD;
 
         listenSock = socket(PF_INET, SOCK_STREAM, 0);
         ft_bzero(&listenAddr, sizeof(listenAddr));
@@ -140,13 +153,13 @@ public:
         struct pollfd listenPoll;
         listenPoll.fd = listenSock;
         listenPoll.events = POLLIN;
-        client.push_back(listenPoll);
+        pollFD.push_back(listenPoll);
 
         while (1)
         {
-            polled = poll(&client[0], client.size(), 5000);
+            polled = poll(&pollFD[0], pollFD.size(), 5000);
 
-            if (client[0].revents & POLLIN)
+            if (pollFD[0].revents & POLLIN)
             {
                 clientAddrSize = sizeof(clientAddr);
                 clientSock = accept(listenSock, (struct sockaddr *)&clientAddr, &clientAddrSize);
@@ -154,56 +167,59 @@ public:
                 struct pollfd newPoll;
                 newPoll.fd = clientSock;
                 newPoll.events = POLLIN;
-                client.push_back(newPoll);
+                pollFD.push_back(newPoll);
 
-                Connection newConnection;
-                _connections.insert(std::pair<int, Connection>(clientSock, newConnection));
+                User newConnection;
+                _users.insert(std::pair<int, User>(clientSock, newConnection));
 
                 std::cout << "connected : " << clientSock << std::endl;
                 continue;
             }
 
             int count = 0;
-            std::vector<struct pollfd>::iterator it = client.begin();
-            ++it;
-            while (it != client.end())
+            std::vector<struct pollfd>::iterator it = pollFD.begin();
+            ++it; // 서버소켓(client[0]) 건너뛰기
+            while (it != pollFD.end())
             {
                 ++count;
+                // 연결 종료
                 if (it->revents & POLLHUP)
                 {
                     std::cout << "distconnected fd : " << it->fd << std::endl;
                     close(it->fd);
-                    _connections.erase(it->fd);
-                    it = client.erase(it);
+                    _users.erase(it->fd);
+                    it = pollFD.erase(it);
                     continue;
                 }
 
+                // 소켓 읽기
                 if (it->revents & (POLLIN | POLLERR))
                 {
-                    if (_connections.at(it->fd).readCommand(it->fd) <= 0)
+                    if (_users.at(it->fd).readCommand(it->fd) <= 0)
                     {
                         std::cout << "can not read" << std::endl;
                         close(it->fd);
-                        _connections.erase(it->fd);
-                        it = client.erase(it);
+                        _users.erase(it->fd);
+                        it = pollFD.erase(it);
                         continue;
                     }
-                    if (_connections.at(it->fd).isReadDone() == READ_DONE)
+                    if (_users.at(it->fd).isReadDone() == READ_DONE)
                     {
-                        _connections.at(it->fd).makeReply();
+                        _users.at(it->fd).makeReply();
                         it->events = POLLOUT;
                     }
                 }
 
+                // 소켓 쓰기
                 if (it->revents & POLLOUT)
                 {
-                    if (_connections.at(it->fd).writeReply(it->fd) == 0)
+                    if (_users.at(it->fd).writeReply(it->fd) == 0)
                         it->events = POLLIN;
                 }
                 ++it;
             }
-            std::cout << "clients : " << count << std::endl;
-            std::cout << "pollfd : " << client.size() << std::endl;
+            std::cout << "connected users : " << count << std::endl;
+            std::cout << "pollfd size : " << pollFD.size() << std::endl;
         }
     }
 };
