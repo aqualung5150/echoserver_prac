@@ -202,7 +202,7 @@ public:
         가장 마지막 [ SPACE ":" trailing ] 에서 crlf 전까지
 
         예상되는 변수
-        std::string prefix (클라이언트가 보내는 메세지에는 포함되지 않을 수도 있음)
+        std::string prefix (클라이언트가 보내는 메세지에는 포함되지 않음)
         std::string command
         std::vector<std::string> params
         std::string trailer
@@ -309,9 +309,12 @@ public:
                         it = pollFD.erase(it);
                         continue;
                     }
+                    // reply 전송
                     if (_users.at(it->fd).isReadDone() == READ_DONE)
                     {
                         executeCommand(_users.at(it->fd).getMessage());
+                        // executeCommand(_users.at(it->fd));
+                        // 더 고민해보기
                         _users.at(it->fd).clearMessage();
                     }
                 }
