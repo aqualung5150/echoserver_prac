@@ -26,7 +26,7 @@ class User
 {
 private:
     // 요청 메시지
-    std::string _clientCommand;
+    std::string _message;
     // 응답 메시지
     std::string _serverReply;
     const char* _writeBuffer;
@@ -35,11 +35,11 @@ private:
 
 public:
     User()
-    : _readDone(false), _clientCommand(""), _serverReply("---RESPONSE---\n"), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0)
+    : _readDone(false), _message(""), _serverReply("---RESPONSE---\n"), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0)
     {
     }
 
-    int readCommand(int socket)
+    int readMessage(int socket)
     {
         char buf[BUF_SIZE];
         int nread;
@@ -49,10 +49,10 @@ public:
         if (nread == 0 || nread == -1)
             return (0);
         else
-            _clientCommand.append(buf, nread);
+            _message.append(buf, nread);
 
         // CRLF(delimter)를 찾았다면 메시지 읽기 완료
-        if (_clientCommand.find("\nEOF\n") != std::string::npos)
+        if (_message.find("\nEOF\n") != std::string::npos)
             _readDone = READ_DONE;
         return (1);
     }
@@ -64,7 +64,7 @@ public:
 
     void makeReply()
     {
-        _serverReply.append(_clientCommand + "--------------\n");
+        _serverReply.append(_message + "--------------\n");
 
         _writeBufferLength = _serverReply.length();
         _writeBuffer = _serverReply.c_str();
@@ -89,7 +89,7 @@ public:
         {
             _readDone = false;
             _serverReply.clear();
-            _clientCommand.clear();
+            _message.clear();
             _serverReply.append("---RESPONSE---\n");
             return (0);
         }
@@ -187,7 +187,7 @@ public:
                 ++count;
                 if (client[it->first].revents & (POLLIN | POLLERR))
                 {
-                    if (it->second.readCommand(client[it->first].fd) <= 0)
+                    if (it->second.readMessage(client[it->first].fd) <= 0)
                     {
                         std::cout << "can not read" << std::endl;
                         close(client[it->first].fd);

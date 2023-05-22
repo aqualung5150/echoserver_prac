@@ -34,7 +34,7 @@ public:
         return _status;
     }
 
-    int readCommand(int socket)
+    int readMessage(int socket)
     {
         char buf[BUF_SIZE];
         int nread;
@@ -193,7 +193,7 @@ public:
             {
                 if (FD_ISSET(it->first, &readSetCopy))
                 {
-                    if (it->second.readCommand(it->first) <= 0)
+                    if (it->second.readMessage(it->first) <= 0)
                     {
                         FD_CLR(it->first, &readSet);
                         close(it->first);

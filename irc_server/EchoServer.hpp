@@ -29,19 +29,16 @@ class User
 private:
     // Socket FD
     int _socket;
-    // Command
-    std::string _clientCommand;
-    // Reply
-    std::string _serverReply;
-    const char* _writeBuffer;
-    size_t _writeBufferLength, _writeBufferSent;
+    // Command Message
+    std::string _message;
     int _readDone;
     // NICK
     std::string _nick;
-    //USER
+    // USER
     std::string _username; // first parameter of USER command
     std::string _realname; // last parameter of USER command
     // Invited Channel
+    // invite된 채널에 join하면 _invited 목록에서 제외
     std::vector<Channel> _invited;
 
 public:
@@ -55,12 +52,23 @@ public:
         return _socket;
     }
 
+    std::string getMessage() const
+    {
+        return _message;
+    }
+
+    void clearMessage()
+    {
+        _message.clear();
+        _readDone = false;
+    }
+
     User()
-    : _readDone(false), _clientCommand(""), _serverReply("---RESPONSE---\n"), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0), _nick(""), _username(""), _realname("")
+    : _readDone(false), _message(""), _nick(""), _username(""), _realname("")
     {
     }
 
-    int readCommand(int socket)
+    int readMessage(int socket)
     {
         char buf[BUF_SIZE];
         int nread;
@@ -70,10 +78,12 @@ public:
         if (nread == 0 || nread == -1)
             return (0);
         else
-            _clientCommand.append(buf, nread);
+            _message.append(buf, nread);
+
+        std::cout << _message << std::endl;
 
         // CRLF(delimter)를 찾았다면 메시지 읽기 완료
-        if (_clientCommand.find("\nEOF\n") != std::string::npos)
+        if (_message.find("\nEOF\n") != std::string::npos)
             _readDone = READ_DONE;
         return (1);
     }
@@ -83,40 +93,40 @@ public:
         return (_readDone);
     }
 
-    void makeReply()
-    {
-        _serverReply.append(_clientCommand + "--------------\n");
+    // void makeReply()
+    // {
+    //     _serverReply.append(_message + "--------------\n");
 
-        _writeBufferLength = _serverReply.length();
-        _writeBuffer = _serverReply.c_str();
-        _writeBufferSent = 0;
-    }
+    //     _writeBufferLength = _serverReply.length();
+    //     _writeBuffer = _serverReply.c_str();
+    //     _writeBufferSent = 0;
+    // }
 
-    int writeReply(int socket)
-    {
-        int len, nwrite, buf_left;
+    // int writeReply(int socket)
+    // {
+    //     int len, nwrite, buf_left;
 
-        buf_left = _writeBufferLength - _writeBufferSent;
-        if (buf_left > BUF_SIZE)
-            len = BUF_SIZE;
-        else
-            len = buf_left;
+    //     buf_left = _writeBufferLength - _writeBufferSent;
+    //     if (buf_left > BUF_SIZE)
+    //         len = BUF_SIZE;
+    //     else
+    //         len = buf_left;
         
-        if ((nwrite = write(socket, _writeBuffer + _writeBufferSent, len)) <= 0)
-            return (-1); //error
-        _writeBufferSent += nwrite;
-        if (_writeBufferSent == _writeBufferLength)
-        // 전송완료 했다면 클라이언트의 정보(메시지)를 초기화 해줌다
-        {
-            _readDone = false;
-            _serverReply.clear();
-            _clientCommand.clear();
-            _serverReply.append("---RESPONSE---\n");
-            return (0);
-        }
-        // 아직 전송하는 중
-        return (1);
-    }
+    //     if ((nwrite = write(socket, _writeBuffer + _writeBufferSent, len)) <= 0)
+    //         return (-1); //error
+    //     _writeBufferSent += nwrite;
+    //     if (_writeBufferSent == _writeBufferLength)
+    //     // 전송완료 했다면 클라이언트의 정보(메시지)를 초기화 해줌다
+    //     {
+    //         _readDone = false;
+    //         _serverReply.clear();
+    //         _message.clear();
+    //         _serverReply.append("---RESPONSE---\n");
+    //         return (0);
+    //     }
+    //     // 아직 전송하는 중
+    //     return (1);
+    // }
 };
 
 class Channel
@@ -128,9 +138,9 @@ private:
     std::string _topic; // Channel's topic
 
     // MODE
-    bool _inviteOnly; // default : false (MODE i)
-    bool _restrictedTopic; // defualt : true (MODE t)
-    std::string _password; // defualt : ""(false) - empty string (MODE k [password])
+    bool _inviteOnly;       // default : false (MODE i)
+    bool _restrictedTopic;  // defualt : true (MODE t)
+    std::string _password;  // defualt : ""(false) - empty string (MODE k [password])
     
     /*
     MODE
@@ -147,6 +157,9 @@ private:
 
     o : Give/take channel operator privilege.
     채널 오퍼레이터라면 누구든지 +/- o 할 수 있음
+
+    => 유효하지 않은 메시지는 reply하지 않음
+    e.g. operator가 아닌 user에게 mode -o를 하는 경우
     */ 
 public:
     Channel(User &creater)
@@ -173,6 +186,52 @@ public:
         {
             ((unsigned char *)s)[i] = 0;
             i++;
+        }
+    }
+
+    void executeCommand(const std::string message)
+    {
+        /*
+        1. [ ":" prefix SPACE ] - 프리픽스
+            prefix     =  servername / ( nickname [ [ "!" user ] "@" host ] )
+        2. command              - 명령어
+        3. [ params ]           - 파라미터
+        4. crlf                 - delimiter
+
+        파라미터는 space로 구분되며
+        가장 마지막 [ SPACE ":" trailing ] 에서 crlf 전까지
+
+        예상되는 변수
+        std::string prefix (클라이언트가 보내는 메세지에는 포함되지 않을 수도 있음)
+        std::string command
+        std::vector<std::string> params
+        std::string trailer
+        */
+        std::stringstream commandStream;
+        int socket;
+        std::string line;
+        std::string reply;
+
+        // make reply
+        commandStream.str(message);
+        std::getline(commandStream, line,' ');
+        if (!line.compare("PRIVMSG"))
+        {
+            reply.append("PRIVMSG ");
+            std::getline(commandStream, line, ' ');
+            socket = atoi(line.c_str());
+            std::getline(commandStream, line);
+            reply.append(line + "\n");
+        }
+
+        // send reply
+        for (std::map<int, User>::iterator it = _users.begin(); it != _users.end(); ++it)
+        {
+            if (it->second.getSocket() == socket)
+            {
+                write(socket, reply.c_str(), reply.length());
+                break ;
+            }
         }
     }
 
@@ -208,6 +267,7 @@ public:
             {
                 clientAddrSize = sizeof(clientAddr);
                 clientSock = accept(listenSock, (struct sockaddr *)&clientAddr, &clientAddrSize);
+                fcntl(clientSock, F_SETFL, O_NONBLOCK);
 
                 struct pollfd newPoll;
                 newPoll.fd = clientSock;
@@ -241,7 +301,7 @@ public:
                 // 소켓 읽기
                 if (it->revents & (POLLIN | POLLERR))
                 {
-                    if (_users.at(it->fd).readCommand(it->fd) <= 0)
+                    if (_users.at(it->fd).readMessage(it->fd) <= 0)
                     {
                         std::cout << "can not read" << std::endl;
                         close(it->fd);
@@ -251,21 +311,14 @@ public:
                     }
                     if (_users.at(it->fd).isReadDone() == READ_DONE)
                     {
-                        _users.at(it->fd).makeReply();
-                        it->events = POLLOUT;
+                        executeCommand(_users.at(it->fd).getMessage());
+                        _users.at(it->fd).clearMessage();
                     }
-                }
-
-                // 소켓 쓰기
-                if (it->revents & POLLOUT)
-                {
-                    if (_users.at(it->fd).writeReply(it->fd) == 0)
-                        it->events = POLLIN;
                 }
                 ++it;
             }
-            std::cout << "connected users : " << count << std::endl;
-            std::cout << "pollfd size : " << pollFD.size() << std::endl;
+            // std::cout << "connected users : " << count << std::endl;
+            // std::cout << "pollfd size : " << pollFD.size() << std::endl;
         }
     }
 };

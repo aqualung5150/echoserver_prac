@@ -23,7 +23,7 @@ class User
 {
 private:
     // 요청 메시지
-    std::string _clientCommand;
+    std::string _message;
     // 응답 메시지
     std::string _serverReply;
     const char* _writeBuffer;
@@ -43,11 +43,11 @@ private:
     // ...
 public:
     User()
-    : _readDone(false), _clientCommand(""), _serverReply(""), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0), _payloadFD(-1), _payloadDone(false)
+    : _readDone(false), _message(""), _serverReply(""), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0), _payloadFD(-1), _payloadDone(false)
     {
     }
 
-    int readCommand(int socket)
+    int readMessage(int socket)
     {
         char buf[BUF_SIZE];
         int nread;
@@ -56,10 +56,10 @@ public:
         if (nread == 0 || nread == -1)
             return (0);
         else
-            _clientCommand.append(buf, nread);
+            _message.append(buf, nread);
 
         // http 요청 메세지의 CRLF / Content-Length / Transfer-Encoding 등을 확인하여 요청이 완료(READ_DONE)되었는지 확인한다.
-        if (_clientCommand.find("\nEOF\n") != std::string::npos)
+        if (_message.find("\nEOF\n") != std::string::npos)
             _readDone = READ_DONE;
         return (1);
     }
@@ -80,7 +80,7 @@ public:
         ssize_t nread;
 
         //요청 메시지 분석
-        if (_payloadFD < 0 && _clientCommand.find("GET image") != std::string::npos)
+        if (_payloadFD < 0 && _message.find("GET image") != std::string::npos)
             _payloadFD = open("./GB.bmp", O_RDONLY);
         else if (_payloadFD < 0)
             _serverReply.append("No GET Method.");
@@ -209,7 +209,7 @@ public:
                 if (FD_ISSET(it->first, &readSetCopy))
                 {
                     // 소켓 읽기 및 연결 종료
-                    if (it->second.readCommand(it->first) <= 0)
+                    if (it->second.readMessage(it->first) <= 0)
                     {
                         // 연결 종료
                         FD_CLR(it->first, &readSet);
