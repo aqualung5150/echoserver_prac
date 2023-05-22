@@ -26,6 +26,8 @@
 class User
 {
 private:
+    // Socket FD
+    int _socket;
     // Command
     std::string _clientCommand;
     // Reply
@@ -40,6 +42,11 @@ private:
     std::string _realname; // last parameter of USER command
 
 public:
+    void setSocket(int fd)
+    {
+        _socket = fd;
+    }
+
     User()
     : _readDone(false), _clientCommand(""), _serverReply("---RESPONSE---\n"), _writeBuffer(NULL), _writeBufferLength(0), _writeBufferSent(0), _nick(""), _username(""), _realname("")
     {
@@ -169,8 +176,9 @@ public:
                 newPoll.events = POLLIN;
                 pollFD.push_back(newPoll);
 
-                User newConnection;
-                _users.insert(std::pair<int, User>(clientSock, newConnection));
+                User newUser;
+                newUser.setSocket(clientSock);
+                _users.insert(std::pair<int, User>(clientSock, newUser));
 
                 std::cout << "connected : " << clientSock << std::endl;
                 continue;
