@@ -24,6 +24,52 @@
 
 class Channel;
 
+class Command
+{
+private:
+    std::string _command;
+    std::vector<std::string> _params;
+    std::string _trailing;
+public:
+    Command(std::string message)
+    : _command(""), _trailing("")
+    {
+        std::stringstream stream;
+        std::string buf;
+
+        message.erase(message.find("\r\n")); // crlf 제거
+        // message.erase(message.find("\nEOF\n")); // crlf 제거
+
+        if (message.find(':') != std::string::npos) // _trailing
+        {
+            _trailing.append(message.substr(message.find(':')));
+            message.erase(message.find(':')); // message에서 _trailing 제거
+        }
+
+        stream.str(message);
+
+        std::getline(stream, buf, ' ');
+        _command.append(buf); // _command
+        buf.clear();
+
+        while(std::getline(stream, buf, ' ')) // _params
+        {
+            _params.push_back(buf);
+            buf.clear();
+        }
+    }
+
+    void testPrint()
+    {
+        if (!_command.empty())
+            std::cout << _command << std::endl;
+        for (std::vector<std::string>::iterator it = _params.begin(); it != _params.end(); ++it)
+            std::cout << *it << std::endl;
+        if (!_trailing.empty())
+            std::cout << _trailing << std::endl;
+    }
+};
+
 class User
 {
 private:
@@ -42,6 +88,45 @@ private:
     std::vector<Channel> _invited;
 
 public:
+    User()
+    : _readDone(false), _message(""), _nick(""), _username(""), _realname("")
+    {
+    }
+
+    int readMessage(int socket)
+    {
+        char buf[BUF_SIZE];
+        int nread;
+
+        nread = read(socket, buf, BUF_SIZE);
+
+        if (nread == 0 || nread == -1)
+            return (0);
+        else
+            _message.append(buf, nread);
+
+        std::cout << "Whole Message : " << std::endl;
+        std::cout << _message << std::endl;
+
+        // CRLF(delimter)를 찾았다면 메시지 읽기 완료
+        // if (_message.find("\r\n") != std::string::npos)
+        // {
+        //     std::cout << "Read Done" << std::endl;
+        //     _readDone = READ_DONE;
+        // }
+
+        while (_message.find("\r\n") != std::string::npos)
+        {
+            
+        }
+        return (1);
+    }
+
+    bool isReadDone()
+    {
+        return (_readDone);
+    }
+
     void setSocket(int fd)
     {
         _socket = fd;
@@ -62,76 +147,12 @@ public:
         _message.clear();
         _readDone = false;
     }
-
-    User()
-    : _readDone(false), _message(""), _nick(""), _username(""), _realname("")
-    {
-    }
-
-    int readMessage(int socket)
-    {
-        char buf[BUF_SIZE];
-        int nread;
-
-        nread = read(socket, buf, BUF_SIZE);
-
-        if (nread == 0 || nread == -1)
-            return (0);
-        else
-            _message.append(buf, nread);
-
-        std::cout << _message << std::endl;
-
-        // CRLF(delimter)를 찾았다면 메시지 읽기 완료
-        if (_message.find("\nEOF\n") != std::string::npos)
-            _readDone = READ_DONE;
-        return (1);
-    }
-
-    bool isReadDone()
-    {
-        return (_readDone);
-    }
-
-    // void makeReply()
-    // {
-    //     _serverReply.append(_message + "--------------\n");
-
-    //     _writeBufferLength = _serverReply.length();
-    //     _writeBuffer = _serverReply.c_str();
-    //     _writeBufferSent = 0;
-    // }
-
-    // int writeReply(int socket)
-    // {
-    //     int len, nwrite, buf_left;
-
-    //     buf_left = _writeBufferLength - _writeBufferSent;
-    //     if (buf_left > BUF_SIZE)
-    //         len = BUF_SIZE;
-    //     else
-    //         len = buf_left;
-        
-    //     if ((nwrite = write(socket, _writeBuffer + _writeBufferSent, len)) <= 0)
-    //         return (-1); //error
-    //     _writeBufferSent += nwrite;
-    //     if (_writeBufferSent == _writeBufferLength)
-    //     // 전송완료 했다면 클라이언트의 정보(메시지)를 초기화 해줌다
-    //     {
-    //         _readDone = false;
-    //         _serverReply.clear();
-    //         _message.clear();
-    //         _serverReply.append("---RESPONSE---\n");
-    //         return (0);
-    //     }
-    //     // 아직 전송하는 중
-    //     return (1);
-    // }
 };
 
 class Channel
 {
 private:
+    std::string _name;
     std::map<int, User> _users; // Joined users
     std::vector<User> _operators; // Operators of this channel
 
@@ -189,50 +210,86 @@ public:
         }
     }
 
-    void executeCommand(const std::string message)
+    // void executeCommand(const std::string message)
+    // {
+    //     /*
+    //     1. [ ":" prefix SPACE ] - 프리픽스
+    //         prefix     =  servername / ( nickname [ [ "!" user ] "@" host ] )
+    //     2. command              - 명령어
+    //     3. [ params ]           - 파라미터
+    //     4. crlf                 - delimiter
+
+    //     파라미터는 space로 구분되며
+    //     가장 마지막 [ SPACE ":" trailing ] 에서 crlf 전까지
+
+    //     예상되는 변수
+    //     std::string prefix (클라이언트가 보내는 메세지에는 포함되지 않음)
+    //     std::string command
+    //     std::vector<std::string> params
+    //     std::string trailer
+    //     */
+
+    //     std::stringstream commandStream;
+    //     int socket;
+    //     std::string line;
+    //     std::string reply;
+
+    //     // make reply
+    //     commandStream.str(message);
+    //     std::getline(commandStream, line,' ');
+    //     if (!line.compare("PRIVMSG"))
+    //     {
+    //         reply.append("PRIVMSG ");
+    //         std::getline(commandStream, line, ' ');
+    //         socket = atoi(line.c_str());
+    //         std::getline(commandStream, line);
+    //         reply.append(line + "\n");
+    //     }
+
+    //     // send reply
+    //     for (std::map<int, User>::iterator it = _users.begin(); it != _users.end(); ++it)
+    //     {
+    //         if (it->second.getSocket() == socket)
+    //         {
+    //             write(socket, reply.c_str(), reply.length());
+    //             break ;
+    //         }
+    //     }
+    // }
+
+
+    void executeCommand(User user)
     {
-        /*
-        1. [ ":" prefix SPACE ] - 프리픽스
-            prefix     =  servername / ( nickname [ [ "!" user ] "@" host ] )
-        2. command              - 명령어
-        3. [ params ]           - 파라미터
-        4. crlf                 - delimiter
+        std::string message = user.getMessage();
+        std::stringstream stream;
+        std::string buf;
 
-        파라미터는 space로 구분되며
-        가장 마지막 [ SPACE ":" trailing ] 에서 crlf 전까지
+        std::string command;
+        std::vector<std::string> params;
+        std::string trailing;
 
-        예상되는 변수
-        std::string prefix (클라이언트가 보내는 메세지에는 포함되지 않음)
-        std::string command
-        std::vector<std::string> params
-        std::string trailer
-        */
-        std::stringstream commandStream;
-        int socket;
-        std::string line;
-        std::string reply;
+        message.erase(message.find("\r\n")); // crlf 제거
+        // message.erase(message.find("\nEOF\n")); // crlf 제거
 
-        // make reply
-        commandStream.str(message);
-        std::getline(commandStream, line,' ');
-        if (!line.compare("PRIVMSG"))
+        if (message.find(':') != std::string::npos) // _trailing
         {
-            reply.append("PRIVMSG ");
-            std::getline(commandStream, line, ' ');
-            socket = atoi(line.c_str());
-            std::getline(commandStream, line);
-            reply.append(line + "\n");
+            trailing.append(message.substr(message.find(':')));
+            message.erase(message.find(':')); // message에서 _trailing 제거
         }
 
-        // send reply
-        for (std::map<int, User>::iterator it = _users.begin(); it != _users.end(); ++it)
+        stream.str(message);
+
+        std::getline(stream, buf, ' ');
+        command.append(buf); // _command
+        buf.clear();
+
+        while(std::getline(stream, buf, ' ')) // _params
         {
-            if (it->second.getSocket() == socket)
-            {
-                write(socket, reply.c_str(), reply.length());
-                break ;
-            }
+            params.push_back(buf);
+            buf.clear();
         }
+
+        // command.testPrint();
     }
 
     void serverStart(int port)
@@ -312,8 +369,8 @@ public:
                     // reply 전송
                     if (_users.at(it->fd).isReadDone() == READ_DONE)
                     {
-                        executeCommand(_users.at(it->fd).getMessage());
-                        // executeCommand(_users.at(it->fd));
+                        // executeCommand(_users.at(it->fd).getMessage());
+                        executeCommand(_users.at(it->fd));
                         // 더 고민해보기
                         _users.at(it->fd).clearMessage();
                     }
