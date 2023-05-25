@@ -1,7 +1,7 @@
 #include "User.hpp"
 
 User::User()
-: _server(NULL), _socket(-1), _message(""), _nick(""), _username(""), _realname("")
+: _server(NULL), _socket(-1), _connected(false), _message(""), _nick(""), _username(""), _realname("")
 {
 }
 
@@ -37,6 +37,11 @@ void User::setSocket(int fd)
     _socket = fd;
 }
 
+void User::setConnected(bool connected)
+{
+    _connected = connected;
+}
+
 void User::setNick(std::string &nick)
 {
     _nick = nick;
@@ -55,6 +60,11 @@ void User::setRealname(std::string &realname)
 int User::getSocket() const
 {
     return _socket;
+}
+
+bool User::getConnected() const
+{
+    return _connected;
 }
 
 std::string User::getMessage() const

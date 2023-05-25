@@ -21,6 +21,8 @@ private:
     Server *_server;
     // Socket FD
     int _socket;
+    // Connection Success
+    bool _connected;
     // Command Message
     std::string _message;
     // int _readDone;
@@ -41,11 +43,13 @@ public:
     //setters
     void setServer(Server *server);
     void setSocket(int fd);
+    void setConnected(bool connected);
     void setNick(std::string &nick);
     void setUsername(std::string &username);
     void setRealname(std::string &realname);
     //getters
     int getSocket() const;
+    bool getConnected() const;
     std::string getMessage() const;
     std::string getNick() const;
     std::string getUsername() const;

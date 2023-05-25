@@ -25,7 +25,7 @@ public:
     Command(Server *server, User *sender);
 
     // test
-    void testPrint();
+    // void testPrint();
 
     // execute
     void execute();
