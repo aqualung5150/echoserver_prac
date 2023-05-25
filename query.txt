@@ -1,0 +1,6 @@
+PRIVMSG seunchoi :this is message
+EOF
+JOIN #tradis
+EOF
+NICK seungjoon
+EOF

@@ -19,21 +19,94 @@
 #include <poll.h>
 #include <vector>
 
-#define BUF_SIZE 512
+#define BUF_SIZE 3
 #define READ_DONE true
 
 class Channel;
+class Server;
+class User;
+class Command;
+
+
+
+class User
+{
+private:
+    Server *_server;
+    // Socket FD
+    int _socket;
+    // Command Message
+    std::string _message;
+    // int _readDone;
+    // NICK
+    std::string _nick;
+    // USER
+    std::string _username; // first parameter of USER command
+    std::string _realname; // last parameter of USER command
+    // Invited Channel
+    // invite된 채널에 join하면 _invited 목록에서 제외
+    std::vector<Channel *> _invited;
+
+public:
+    User()
+    : _server(NULL), _socket(-1), _message(""), _nick(""), _username(""), _realname("")
+    {
+    }
+
+    int readMessage(int socket);
+
+    void trimMessage()
+    {
+        _message = _message.erase(0, _message.find("\r\n") + 2);
+        // _message = _message.erase(0, _message.find("\nEOF\n") + 5);
+    }
+
+    // bool isReadDone()
+    // {
+    //     return (_readDone);
+    // }
+
+    void setSocket(int fd)
+    {
+        _socket = fd;
+    }
+
+    void setServer(Server *server)
+    {
+        _server = server;
+    }
+
+    int getSocket()
+    {
+        return _socket;
+    }
+
+    std::string getMessage() const
+    {
+        return _message;
+    }
+
+    // void clearMessage()
+    // {
+    //     _message.clear();
+    //     _readDone = false;
+    // }
+};
 
 class Command
 {
 private:
+    Server *_server;
+    User *_sender;
+
     std::string _command;
     std::vector<std::string> _params;
     std::string _trailing;
 public:
-    Command(std::string message)
-    : _command(""), _trailing("")
+    Command(Server *server, User *sender)
+    : _server(server), _sender(sender), _command(""), _trailing("")
     {
+        std::string message = _sender->getMessage();
         std::stringstream stream;
         std::string buf;
 
@@ -61,39 +134,21 @@ public:
 
     void testPrint()
     {
-        if (!_command.empty())
+        if (_command.empty())
+            std::cout << "No command" << std::endl;
+        else
             std::cout << _command << std::endl;
         for (std::vector<std::string>::iterator it = _params.begin(); it != _params.end(); ++it)
             std::cout << *it << std::endl;
-        if (!_trailing.empty())
+        if (_trailing.empty())
+            std::cout << "No trailing" << std::endl;
+        else
             std::cout << _trailing << std::endl;
+        std::cout << "------" << std::endl;
     }
 };
 
-class User
-{
-private:
-    // Socket FD
-    int _socket;
-    // Command Message
-    std::string _message;
-    int _readDone;
-    // NICK
-    std::string _nick;
-    // USER
-    std::string _username; // first parameter of USER command
-    std::string _realname; // last parameter of USER command
-    // Invited Channel
-    // invite된 채널에 join하면 _invited 목록에서 제외
-    std::vector<Channel> _invited;
-
-public:
-    User()
-    : _readDone(false), _message(""), _nick(""), _username(""), _realname("")
-    {
-    }
-
-    int readMessage(int socket)
+int User::readMessage(int socket)
     {
         char buf[BUF_SIZE];
         int nread;
@@ -105,8 +160,8 @@ public:
         else
             _message.append(buf, nread);
 
-        std::cout << "Whole Message : " << std::endl;
-        std::cout << _message << std::endl;
+        // std::cout << "Whole Message : " << std::endl;
+        // std::cout << _message << std::endl;
 
         // CRLF(delimter)를 찾았다면 메시지 읽기 완료
         // if (_message.find("\r\n") != std::string::npos)
@@ -116,45 +171,22 @@ public:
         // }
 
         while (_message.find("\r\n") != std::string::npos)
+        // while (_message.find("\nEOF\n") != std::string::npos)
         {
-            
+            // std::cout << "here" << std::endl;
+            Command command(_server, this);
+            command.testPrint();
+            trimMessage();
         }
         return (1);
     }
-
-    bool isReadDone()
-    {
-        return (_readDone);
-    }
-
-    void setSocket(int fd)
-    {
-        _socket = fd;
-    }
-
-    int getSocket()
-    {
-        return _socket;
-    }
-
-    std::string getMessage() const
-    {
-        return _message;
-    }
-
-    void clearMessage()
-    {
-        _message.clear();
-        _readDone = false;
-    }
-};
 
 class Channel
 {
 private:
     std::string _name;
-    std::map<int, User> _users; // Joined users
-    std::vector<User> _operators; // Operators of this channel
+    std::map<int, User*> _users; // Joined users
+    std::vector<User*> _operators; // Operators of this channel
 
     std::string _topic; // Channel's topic
 
@@ -183,10 +215,10 @@ private:
     e.g. operator가 아닌 user에게 mode -o를 하는 경우
     */ 
 public:
-    Channel(User &creater)
+    Channel(User *creater)
     : _topic(""), _inviteOnly(false), _restrictedTopic(true), _password("")
     {
-        _users.insert(std::pair<int, User>(creater.getSocket(), creater));
+        _users.insert(std::pair<int, User*>(creater->getSocket(), creater));
         _operators.push_back(creater);
     }
 };
@@ -194,8 +226,8 @@ public:
 class Server
 {
 private:
-    std::map<int, User> _users;
-    std::vector<Channel> _channels;
+    std::map<int, User*> _users;
+    std::vector<Channel*> _channels;
     std::string _password;
 public:
     static void ft_bzero(void *s, size_t n)
@@ -258,39 +290,39 @@ public:
     // }
 
 
-    void executeCommand(User user)
-    {
-        std::string message = user.getMessage();
-        std::stringstream stream;
-        std::string buf;
+    // void executeCommand(User *user)
+    // {
+    //     std::string message = user->getMessage();
+    //     std::stringstream stream;
+    //     std::string buf;
 
-        std::string command;
-        std::vector<std::string> params;
-        std::string trailing;
+    //     std::string command;
+    //     std::vector<std::string> params;
+    //     std::string trailing;
 
-        message.erase(message.find("\r\n")); // crlf 제거
-        // message.erase(message.find("\nEOF\n")); // crlf 제거
+    //     message.erase(message.find("\r\n")); // crlf 제거
+    //     // message.erase(message.find("\nEOF\n")); // crlf 제거
 
-        if (message.find(':') != std::string::npos) // _trailing
-        {
-            trailing.append(message.substr(message.find(':')));
-            message.erase(message.find(':')); // message에서 _trailing 제거
-        }
+    //     if (message.find(':') != std::string::npos) // _trailing
+    //     {
+    //         trailing.append(message.substr(message.find(':')));
+    //         message.erase(message.find(':')); // message에서 _trailing 제거
+    //     }
 
-        stream.str(message);
+    //     stream.str(message);
 
-        std::getline(stream, buf, ' ');
-        command.append(buf); // _command
-        buf.clear();
+    //     std::getline(stream, buf, ' ');
+    //     command.append(buf); // _command
+    //     buf.clear();
 
-        while(std::getline(stream, buf, ' ')) // _params
-        {
-            params.push_back(buf);
-            buf.clear();
-        }
+    //     while(std::getline(stream, buf, ' ')) // _params
+    //     {
+    //         params.push_back(buf);
+    //         buf.clear();
+    //     }
 
-        // command.testPrint();
-    }
+    //     // command.testPrint();
+    // }
 
     void serverStart(int port)
     {
@@ -331,9 +363,11 @@ public:
                 newPoll.events = POLLIN;
                 pollFD.push_back(newPoll);
 
-                User newUser;
-                newUser.setSocket(clientSock);
-                _users.insert(std::pair<int, User>(clientSock, newUser));
+                User *newUser = new User;
+
+                newUser->setSocket(clientSock);
+                newUser->setServer(this);
+                _users.insert(std::pair<int, User*>(clientSock, newUser));
 
                 std::cout << "connected : " << clientSock << std::endl;
                 continue;
@@ -349,6 +383,7 @@ public:
                 if (it->revents & POLLHUP)
                 {
                     std::cout << "distconnected fd : " << it->fd << std::endl;
+                    delete _users.at(it->fd);
                     close(it->fd);
                     _users.erase(it->fd);
                     it = pollFD.erase(it);
@@ -358,28 +393,39 @@ public:
                 // 소켓 읽기
                 if (it->revents & (POLLIN | POLLERR))
                 {
-                    if (_users.at(it->fd).readMessage(it->fd) <= 0)
+                    if (_users.at(it->fd)->readMessage(it->fd) <= 0)
                     {
                         std::cout << "can not read" << std::endl;
+                        delete _users.at(it->fd);
                         close(it->fd);
                         _users.erase(it->fd);
                         it = pollFD.erase(it);
                         continue;
                     }
                     // reply 전송
-                    if (_users.at(it->fd).isReadDone() == READ_DONE)
-                    {
-                        // executeCommand(_users.at(it->fd).getMessage());
-                        executeCommand(_users.at(it->fd));
-                        // 더 고민해보기
-                        _users.at(it->fd).clearMessage();
-                    }
+                    // if (_users.at(it->fd)->isReadDone() == READ_DONE)
+                    // {
+                    //     // executeCommand(_users.at(it->fd).getMessage());
+                    //     executeCommand(_users.at(it->fd));
+                    //     // 더 고민해보기
+                    //     _users.at(it->fd)->clearMessage();
+                    // }
                 }
                 ++it;
             }
             // std::cout << "connected users : " << count << std::endl;
             // std::cout << "pollfd size : " << pollFD.size() << std::endl;
         }
+    }
+
+    std::map<int, User*>& getUsers()
+    {
+        return _users;
+    }
+
+    std::vector<Channel*>& getChannels()
+    {
+        return _channels;
     }
 };
 

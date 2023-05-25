@@ -130,7 +130,7 @@ public:
     }
 };
 
-class EchoServer
+class Server
 {
 private:
     std::map<int, User> _users;
