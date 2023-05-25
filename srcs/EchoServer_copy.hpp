@@ -147,7 +147,7 @@ public:
         }
     }
 
-    void serverStart(int port)
+    void startServer(int port)
     {
         int listenSock, clientSock;
         struct sockaddr_in listenAddr, clientAddr;

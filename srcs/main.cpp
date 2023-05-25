@@ -6,7 +6,7 @@ int main(int argc, char** argv)
         return 1;
 
     Server a;
-    a.serverStart(atoi(argv[1]));
+    a.startServer(atoi(argv[1]));
 
     return 0;
 }

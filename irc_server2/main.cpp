@@ -1,4 +1,7 @@
-#include "EchoServer_copy.hpp"
+#include "Server.hpp"
+#include "User.hpp"
+#include "Channel.hpp"
+#include "Command.hpp"
 
 int main(int argc, char** argv)
 {

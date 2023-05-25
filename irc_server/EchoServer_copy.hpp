@@ -19,7 +19,7 @@
 #include <poll.h>
 #include <vector>
 
-#define BUF_SIZE 3
+#define BUF_SIZE 512
 #define READ_DONE true
 
 class Channel;
@@ -58,13 +58,7 @@ public:
     void trimMessage()
     {
         _message = _message.erase(0, _message.find("\r\n") + 2);
-        // _message = _message.erase(0, _message.find("\nEOF\n") + 5);
     }
-
-    // bool isReadDone()
-    // {
-    //     return (_readDone);
-    // }
 
     void setSocket(int fd)
     {
@@ -85,12 +79,6 @@ public:
     {
         return _message;
     }
-
-    // void clearMessage()
-    // {
-    //     _message.clear();
-    //     _readDone = false;
-    // }
 };
 
 class Command
@@ -111,7 +99,6 @@ public:
         std::string buf;
 
         message.erase(message.find("\r\n")); // crlf 제거
-        // message.erase(message.find("\nEOF\n")); // crlf 제거
 
         if (message.find(':') != std::string::npos) // _trailing
         {
@@ -135,16 +122,16 @@ public:
     void testPrint()
     {
         if (_command.empty())
-            std::cout << "No command" << std::endl;
+            std::cout << "There is No Command." << std::endl;
         else
             std::cout << _command << std::endl;
         for (std::vector<std::string>::iterator it = _params.begin(); it != _params.end(); ++it)
             std::cout << *it << std::endl;
         if (_trailing.empty())
-            std::cout << "No trailing" << std::endl;
+            std::cout << "There is No Trailing" << std::endl;
         else
             std::cout << _trailing << std::endl;
-        std::cout << "------" << std::endl;
+        std::cout << "------------" << std::endl;
     }
 };
 
@@ -160,20 +147,8 @@ int User::readMessage(int socket)
         else
             _message.append(buf, nread);
 
-        // std::cout << "Whole Message : " << std::endl;
-        // std::cout << _message << std::endl;
-
-        // CRLF(delimter)를 찾았다면 메시지 읽기 완료
-        // if (_message.find("\r\n") != std::string::npos)
-        // {
-        //     std::cout << "Read Done" << std::endl;
-        //     _readDone = READ_DONE;
-        // }
-
         while (_message.find("\r\n") != std::string::npos)
-        // while (_message.find("\nEOF\n") != std::string::npos)
         {
-            // std::cout << "here" << std::endl;
             Command command(_server, this);
             command.testPrint();
             trimMessage();
@@ -214,6 +189,7 @@ private:
     => 유효하지 않은 메시지는 reply하지 않음
     e.g. operator가 아닌 user에게 mode -o를 하는 경우
     */ 
+   
 public:
     Channel(User *creater)
     : _topic(""), _inviteOnly(false), _restrictedTopic(true), _password("")
@@ -242,89 +218,7 @@ public:
         }
     }
 
-    // void executeCommand(const std::string message)
-    // {
-    //     /*
-    //     1. [ ":" prefix SPACE ] - 프리픽스
-    //         prefix     =  servername / ( nickname [ [ "!" user ] "@" host ] )
-    //     2. command              - 명령어
-    //     3. [ params ]           - 파라미터
-    //     4. crlf                 - delimiter
-
-    //     파라미터는 space로 구분되며
-    //     가장 마지막 [ SPACE ":" trailing ] 에서 crlf 전까지
-
-    //     예상되는 변수
-    //     std::string prefix (클라이언트가 보내는 메세지에는 포함되지 않음)
-    //     std::string command
-    //     std::vector<std::string> params
-    //     std::string trailer
-    //     */
-
-    //     std::stringstream commandStream;
-    //     int socket;
-    //     std::string line;
-    //     std::string reply;
-
-    //     // make reply
-    //     commandStream.str(message);
-    //     std::getline(commandStream, line,' ');
-    //     if (!line.compare("PRIVMSG"))
-    //     {
-    //         reply.append("PRIVMSG ");
-    //         std::getline(commandStream, line, ' ');
-    //         socket = atoi(line.c_str());
-    //         std::getline(commandStream, line);
-    //         reply.append(line + "\n");
-    //     }
-
-    //     // send reply
-    //     for (std::map<int, User>::iterator it = _users.begin(); it != _users.end(); ++it)
-    //     {
-    //         if (it->second.getSocket() == socket)
-    //         {
-    //             write(socket, reply.c_str(), reply.length());
-    //             break ;
-    //         }
-    //     }
-    // }
-
-
-    // void executeCommand(User *user)
-    // {
-    //     std::string message = user->getMessage();
-    //     std::stringstream stream;
-    //     std::string buf;
-
-    //     std::string command;
-    //     std::vector<std::string> params;
-    //     std::string trailing;
-
-    //     message.erase(message.find("\r\n")); // crlf 제거
-    //     // message.erase(message.find("\nEOF\n")); // crlf 제거
-
-    //     if (message.find(':') != std::string::npos) // _trailing
-    //     {
-    //         trailing.append(message.substr(message.find(':')));
-    //         message.erase(message.find(':')); // message에서 _trailing 제거
-    //     }
-
-    //     stream.str(message);
-
-    //     std::getline(stream, buf, ' ');
-    //     command.append(buf); // _command
-    //     buf.clear();
-
-    //     while(std::getline(stream, buf, ' ')) // _params
-    //     {
-    //         params.push_back(buf);
-    //         buf.clear();
-    //     }
-
-    //     // command.testPrint();
-    // }
-
-    void serverStart(int port)
+    void startServer(int port)
     {
         int listenSock, clientSock;
         struct sockaddr_in listenAddr, clientAddr;
@@ -373,12 +267,10 @@ public:
                 continue;
             }
 
-            int count = 0;
             std::vector<struct pollfd>::iterator it = pollFD.begin();
             ++it; // 서버소켓(client[0]) 건너뛰기
             while (it != pollFD.end())
             {
-                ++count;
                 // 연결 종료
                 if (it->revents & POLLHUP)
                 {
@@ -390,7 +282,7 @@ public:
                     continue;
                 }
 
-                // 소켓 읽기
+                // 소켓 읽기 및 command 실행
                 if (it->revents & (POLLIN | POLLERR))
                 {
                     if (_users.at(it->fd)->readMessage(it->fd) <= 0)
@@ -402,19 +294,9 @@ public:
                         it = pollFD.erase(it);
                         continue;
                     }
-                    // reply 전송
-                    // if (_users.at(it->fd)->isReadDone() == READ_DONE)
-                    // {
-                    //     // executeCommand(_users.at(it->fd).getMessage());
-                    //     executeCommand(_users.at(it->fd));
-                    //     // 더 고민해보기
-                    //     _users.at(it->fd)->clearMessage();
-                    // }
                 }
                 ++it;
             }
-            // std::cout << "connected users : " << count << std::endl;
-            // std::cout << "pollfd size : " << pollFD.size() << std::endl;
         }
     }
 
