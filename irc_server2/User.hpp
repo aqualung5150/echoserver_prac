@@ -31,9 +31,10 @@ private:
     // USER
     std::string _username; // first parameter of USER command
     std::string _realname; // last parameter of USER command
-    // Invited Channel
+    // Channel
+    std::vector<Channel*> _joined;
     // invite된 채널에 join하면 _invited 목록에서 제외
-    std::vector<Channel *> _invited;
+    std::vector<Channel*> _invited;
 
 public:
     User();
@@ -48,12 +49,14 @@ public:
     void setUsername(std::string &username);
     void setRealname(std::string &realname);
     //getters
+    Server *getServer();
     int getSocket() const;
     bool getConnected() const;
     std::string getMessage() const;
     std::string getNick() const;
     std::string getUsername() const;
     std::string getRealname() const;
+    std::vector<Channel*> getJoined();
 };
 
 #endif

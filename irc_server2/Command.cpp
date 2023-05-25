@@ -145,5 +145,11 @@ void Command::USER()
 
 void Command::QUIT()
 {
+    std::cout << _sender->getNick() << " has left the server." << std::endl;
 
+    // 채널에서 유저 지우기
+    std::vector<Channel*> channels = _sender->getJoined();
+
+    for (std::vector<Channel*>::iterator it = channels.begin(); it != channels.end(); ++it)
+        (*it)->kickUser(_sender->getNick());
 }

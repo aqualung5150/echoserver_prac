@@ -13,7 +13,8 @@ class Channel
 {
 private:
     std::string _name;
-    std::map<int, User*> _users; // Joined users
+    // std::map<int, User*> _users; // Joined users
+    std::vector<User*> _users; // Joined users
     std::vector<User*> _operators; // Operators of this channel
 
     std::string _topic; // Channel's topic
@@ -45,6 +46,8 @@ private:
    
 public:
     Channel(User *creater);
+
+    void kickUser(std::string nick);
 };
 
 #endif

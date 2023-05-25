@@ -71,7 +71,7 @@ void Server::startServer(int port)
             // 연결 종료
             if (it->revents & POLLHUP)
             {
-                std::cout << "distconnected fd : " << it->fd << std::endl;
+                std::cout << "Client socket:" << it->fd << " shutdown." << std::endl;
                 delete _users.at(it->fd);
                 close(it->fd);
                 _users.erase(it->fd);
@@ -84,7 +84,7 @@ void Server::startServer(int port)
             {
                 if (_users.at(it->fd)->readMessage(it->fd) <= 0)
                 {
-                    std::cout << "can not read" << std::endl;
+                    std::cout << "Client socket:" << it->fd << " can not read" << std::endl;
                     delete _users.at(it->fd);
                     close(it->fd);
                     _users.erase(it->fd);

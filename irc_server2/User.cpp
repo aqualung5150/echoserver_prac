@@ -27,6 +27,7 @@ int User::readMessage(int socket)
     return (1);
 }
 
+//setters
 void User::setServer(Server *server)
 {
     _server = server;
@@ -57,6 +58,13 @@ void User::setRealname(std::string &realname)
     _realname = realname;
 }
 
+
+//getters
+Server* User::getServer()
+{
+    return _server;
+}
+
 int User::getSocket() const
 {
     return _socket;
@@ -85,4 +93,9 @@ std::string User::getUsername() const
 std::string User::getRealname() const
 {
     return _realname;
+}
+
+std::vector<Channel*> User::getJoined()
+{
+    return _joined;
 }
