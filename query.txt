@@ -1,6 +1,3 @@
-PRIVMSG seunchoi :this is message
-EOF
-JOIN #tradis
-EOF
-NICK seungjoon
-EOF
+PASS 1234
+NICK aaaa
+USER a a a :a

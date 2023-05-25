@@ -1,7 +1,7 @@
 #include "User.hpp"
 
 User::User()
-: _server(NULL), _socket(-1), _permission(false), _connected(false), _message(""), _nick(""), _username(""), _realname("")
+: _server(NULL), _socket(-1), _status(NOPASS), _registered(false), _message(""), _nick(""), _username(""), _realname("")
 {
 }
 
@@ -24,6 +24,8 @@ int User::readMessage(int socket)
         command.execute();
         _message = _message.erase(0, _message.find("\r\n") + 2); // trim used message
     }
+    if (_status == DELETE)
+        return (-1);
     return (1);
 }
 
@@ -38,15 +40,25 @@ void User::setSocket(int fd)
     _socket = fd;
 }
 
-void User::setPermission(bool permission)
+// void User::setPermission(bool permission)
+// {
+//     _permission = permission;
+// }
+
+void User::setStatus(int status)
 {
-    _permission = permission;
+    _status = status;
 }
 
-void User::setConnected(bool connected)
+void User::setRegistered(bool registered)
 {
-    _connected = connected;
+    _registered = registered;
 }
+
+// void User::setConnected(bool connected)
+// {
+//     _connected = connected;
+// }
 
 void User::setNick(std::string &nick)
 {
@@ -75,15 +87,25 @@ int User::getSocket() const
     return _socket;
 }
 
-bool User::getPermission() const
+// bool User::getPermission() const
+// {
+//     return _permission;
+// }
+
+int User::getStatus() const
 {
-    return _permission;
+    return _status;
 }
 
-bool User::getConnected() const
+bool User::getRegistered() const
 {
-    return _connected;
+    return _registered;
 }
+
+// bool User::getConnected() const
+// {
+//     return _connected;
+// }
 
 std::string User::getMessage() const
 {

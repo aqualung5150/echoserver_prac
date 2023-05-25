@@ -13,6 +13,14 @@
 
 #define BUF_SIZE 512
 
+enum Status
+{
+    NOPASS,
+    ALLOWED,
+    CONNECTED,
+    DELETE
+};
+
 class Server;
 
 class User
@@ -22,9 +30,13 @@ private:
     // Socket FD
     int _socket;
     // Permission(Password)
-    bool _permission;
-    // Connection Success
-    bool _connected;
+    // bool _permission;
+    // Status
+    int _status;
+    // Registered
+    bool _registered;
+    // // Connection Success
+    // bool _connected;
     // Command Message
     std::string _message;
     // int _readDone;
@@ -46,16 +58,20 @@ public:
     //setters
     void setServer(Server *server);
     void setSocket(int fd);
-    void setPermission(bool permission);
-    void setConnected(bool connected);
+    // void setPermission(bool permission);
+    // void setConnected(bool connected);
+    void setStatus(int status);
+    void setRegistered(bool connected);
     void setNick(std::string &nick);
     void setUsername(std::string &username);
     void setRealname(std::string &realname);
     //getters
     Server *getServer();
     int getSocket() const;
-    bool getPermission() const;
-    bool getConnected() const;
+    // bool getPermission() const;
+    // bool getConnected() const;
+    int getStatus() const;
+    bool getRegistered() const;
     std::string getMessage() const;
     std::string getNick() const;
     std::string getUsername() const;

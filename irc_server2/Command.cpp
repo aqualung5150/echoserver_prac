@@ -83,7 +83,7 @@ void Command::NICK()
     _sender->setNick(_params[0]);
 
     // Change nick
-    if (_sender->getConnected())
+    if (_sender->getStatus() == CONNECTED)
     {
         std::string reply = ":ft_irc NICK :" + _sender->getNick() + "\r\n";
         write(_sender->getSocket(), reply.c_str(), reply.length());
@@ -91,11 +91,11 @@ void Command::NICK()
     }
     
     // Init nick (first connection - RPL_WELCOME)
-    if (!_sender->getConnected() && !_sender->getNick().empty() && !_sender->getUsername().empty() && !_sender->getRealname().empty())
+    if (_sender->getStatus() == ALLOWED && !_sender->getNick().empty() && _sender->getRegistered())
     {
         std::string reply;
 
-        _sender->setConnected(true);
+        _sender->setStatus(CONNECTED);
         // RPL_WELCOME
         reply = ":ft_irc 001 " + _sender->getNick() + " :Welcome to ft_irc server! " + _sender->getNick() + "\r\n";
 
@@ -116,7 +116,7 @@ void Command::USER()
         write(_sender->getSocket(), reply.c_str(), reply.length());
         return;
     }
-    else if (_sender->getConnected())
+    else if (_sender->getRegistered())
     {
         // ERR_ALREADYREGISTRED
         std::string reply = ":irc.local 462 " + _sender->getNick() + " :You may not reregister\r\n";
@@ -127,13 +127,14 @@ void Command::USER()
     {
         _sender->setUsername(_params[0]);
         _sender->setRealname(_trailing);
+        _sender->setRegistered(true);
     }
 
-    if (!_sender->getConnected() && !_sender->getNick().empty() && !_sender->getUsername().empty() && !_sender->getRealname().empty())
+    if (_sender->getStatus() == ALLOWED && !_sender->getNick().empty() && _sender->getRegistered())
     {
         std::string reply;
 
-        _sender->setConnected(true);
+        _sender->setStatus(CONNECTED);
         // RPL_WELCOME
         reply = ":ft_irc 001 " + _sender->getNick() + " :Welcome to ft_irc server! " + _sender->getNick() + "\r\n";
 
@@ -152,12 +153,18 @@ void Command::QUIT()
 
     // for (std::vector<Channel*>::iterator it = channels.begin(); it != channels.end(); ++it)
     //     (*it)->kickUser(_sender->getNick());
-    _server->disconnect(_sender);
+    // _server->disconnect(_sender);
+    
+    _sender->setStatus(DELETE);
+    // reply (ERROR: Closing Link)
 }
 
 void Command::PASS()
 {
     //temp
-    if (!_params[0].compare(_server->getPassword()))
-        _sender->setPermission(true);
+    if (_params[0].compare(_server->getPassword()))
+        _sender->setStatus(DELETE);
+        // reply (ERROR: Closing Link)
+    else
+        _sender->setStatus(ALLOWED);
 }

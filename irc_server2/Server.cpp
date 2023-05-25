@@ -80,9 +80,12 @@ void Server::startServer(int port)
                 // it = _pollFD.erase(it);
                 // continue;
 
-                std::cout << "POLLHUP" << std::endl;
+                //DEBUG
+                std::cout << "POLLHUP disconnect" << std::endl;
 
                 disconnect(_users.at(it->fd));
+                if (it == _pollFD.end())
+                    break;
                 continue;
             }
 
@@ -98,15 +101,18 @@ void Server::startServer(int port)
                     // it = _pollFD.erase(it);
                     // continue;
 
-                    std::cout << "POLLIN && No Read" << std::endl;
+                    //DEBUG
+                    std::cout << "POLLIN disconnect" << std::endl;
 
                     disconnect(_users.at(it->fd));
+                    if (it == _pollFD.end())
+                        break;
                     continue;
                 }
             }
             // ++it;
-            if (it == _pollFD.end())
-                break;
+            // if (it == _pollFD.end())
+            //     break;
         }
     }
 }
@@ -119,7 +125,10 @@ void Server::disconnect(User *user)
     // leave channels;
     std::vector<Channel*> channels = user->getJoined();
     for (std::vector<Channel*>::iterator it = channels.begin(); it != channels.end(); ++it)
+    {
+        //속한 채널의 모든 유저에게 나간다고 알리기 (e.g. => :cc!root@127.0.0.1 QUIT :Quit: leaving)
         (*it)->kickUser(user->getNick());
+    }
 
 
     close(user->getSocket());
