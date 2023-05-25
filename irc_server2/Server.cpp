@@ -64,18 +64,25 @@ void Server::startServer(int port)
             continue;
         }
 
-        std::vector<struct pollfd>::iterator it = _pollFD.begin();
-        ++it; // 서버소켓(client[0]) 건너뛰기
-        while (it != _pollFD.end())
+        
+        // std::vector<struct pollfd>::iterator it = _pollFD.begin();
+        // it++;
+        // while (it != _pollFD.end())
+        for (std::vector<struct pollfd>::iterator it = _pollFD.begin() + 1; it != _pollFD.end(); ++it)
         {
             // 연결 종료
             if (it->revents & POLLHUP)
             {
-                std::cout << "Client socket:" << it->fd << " shutdown." << std::endl;
-                delete _users.at(it->fd);
-                close(it->fd);
-                _users.erase(it->fd);
-                it = _pollFD.erase(it);
+                // std::cout << "Client socket:" << it->fd << " shutdown." << std::endl;
+                // delete _users.at(it->fd);
+                // close(it->fd);
+                // _users.erase(it->fd);
+                // it = _pollFD.erase(it);
+                // continue;
+
+                std::cout << "POLLHUP" << std::endl;
+
+                disconnect(_users.at(it->fd));
                 continue;
             }
 
@@ -84,17 +91,54 @@ void Server::startServer(int port)
             {
                 if (_users.at(it->fd)->readMessage(it->fd) <= 0)
                 {
-                    std::cout << "Client socket:" << it->fd << " can not read" << std::endl;
-                    delete _users.at(it->fd);
-                    close(it->fd);
-                    _users.erase(it->fd);
-                    it = _pollFD.erase(it);
+                    // std::cout << "Client socket:" << it->fd << " can not read" << std::endl;
+                    // delete _users.at(it->fd);
+                    // close(it->fd);
+                    // _users.erase(it->fd);
+                    // it = _pollFD.erase(it);
+                    // continue;
+
+                    std::cout << "POLLIN && No Read" << std::endl;
+
+                    disconnect(_users.at(it->fd));
                     continue;
                 }
             }
-            ++it;
+            // ++it;
+            if (it == _pollFD.end())
+                break;
         }
     }
+}
+
+void Server::disconnect(User *user)
+{
+    std::cout << user->getNick() << " has left the server." << std::endl;
+    std::cout << "fd:" << user->getSocket() << " shutdown." << std::endl;
+
+    // leave channels;
+    std::vector<Channel*> channels = user->getJoined();
+    for (std::vector<Channel*>::iterator it = channels.begin(); it != channels.end(); ++it)
+        (*it)->kickUser(user->getNick());
+
+
+    close(user->getSocket());
+
+    // delete on user list
+    _users.erase(user->getSocket());
+    
+    // delete on pollfds
+    for (std::vector<struct pollfd>::iterator it = _pollFD.begin(); it != _pollFD.end(); ++it)
+    {
+        if (it->fd == user->getSocket())
+        {
+            _pollFD.erase(it);
+            break;
+        }
+    }
+
+    // free
+    delete user;
 }
 
 std::map<int, User*>& Server::getUsers()
@@ -105,4 +149,9 @@ std::map<int, User*>& Server::getUsers()
 std::vector<Channel*>& Server::getChannels()
 {
     return _channels;
+}
+
+std::string Server::getPassword() const
+{
+    return _password;
 }

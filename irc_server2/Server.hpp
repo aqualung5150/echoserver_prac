@@ -25,11 +25,14 @@ private:
     std::string _password;
 public:
     Server(std::string& password);
+
     void startServer(int port);
+    void disconnect(User *user);
 
     //getters
     std::map<int, User*>& getUsers();
     std::vector<Channel*>& getChannels();
+    std::string getPassword() const;
 };
 
 #endif

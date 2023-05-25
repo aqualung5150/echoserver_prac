@@ -1,7 +1,7 @@
 #include "User.hpp"
 
 User::User()
-: _server(NULL), _socket(-1), _connected(false), _message(""), _nick(""), _username(""), _realname("")
+: _server(NULL), _socket(-1), _permission(false), _connected(false), _message(""), _nick(""), _username(""), _realname("")
 {
 }
 
@@ -38,6 +38,11 @@ void User::setSocket(int fd)
     _socket = fd;
 }
 
+void User::setPermission(bool permission)
+{
+    _permission = permission;
+}
+
 void User::setConnected(bool connected)
 {
     _connected = connected;
@@ -68,6 +73,11 @@ Server* User::getServer()
 int User::getSocket() const
 {
     return _socket;
+}
+
+bool User::getPermission() const
+{
+    return _permission;
 }
 
 bool User::getConnected() const

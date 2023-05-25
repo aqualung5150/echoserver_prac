@@ -46,11 +46,13 @@ Command::Command(Server *server, User *sender)
 
 void Command::execute()
 {
-    if (!_command.compare("NICK"))
+    if (!_command.compare("PASS"))
+        PASS();
+    else if (!_command.compare("NICK"))
         NICK();
-    if (!_command.compare("USER"))
+    else if (!_command.compare("USER"))
         USER();
-    if (!_command.compare("QUIT"))
+    else if (!_command.compare("QUIT"))
         QUIT();
 }
 
@@ -145,11 +147,17 @@ void Command::USER()
 
 void Command::QUIT()
 {
-    std::cout << _sender->getNick() << " has left the server." << std::endl;
-
     // 채널에서 유저 지우기
-    std::vector<Channel*> channels = _sender->getJoined();
+    // std::vector<Channel*> channels = _sender->getJoined();
 
-    for (std::vector<Channel*>::iterator it = channels.begin(); it != channels.end(); ++it)
-        (*it)->kickUser(_sender->getNick());
+    // for (std::vector<Channel*>::iterator it = channels.begin(); it != channels.end(); ++it)
+    //     (*it)->kickUser(_sender->getNick());
+    _server->disconnect(_sender);
+}
+
+void Command::PASS()
+{
+    //temp
+    if (!_params[0].compare(_server->getPassword()))
+        _sender->setPermission(true);
 }

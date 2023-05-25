@@ -32,6 +32,7 @@ public:
     void NICK();
     void USER();
     void QUIT();
+    void PASS();
 };
 
 #endif

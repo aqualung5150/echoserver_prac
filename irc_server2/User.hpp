@@ -21,6 +21,8 @@ private:
     Server *_server;
     // Socket FD
     int _socket;
+    // Permission(Password)
+    bool _permission;
     // Connection Success
     bool _connected;
     // Command Message
@@ -44,6 +46,7 @@ public:
     //setters
     void setServer(Server *server);
     void setSocket(int fd);
+    void setPermission(bool permission);
     void setConnected(bool connected);
     void setNick(std::string &nick);
     void setUsername(std::string &username);
@@ -51,6 +54,7 @@ public:
     //getters
     Server *getServer();
     int getSocket() const;
+    bool getPermission() const;
     bool getConnected() const;
     std::string getMessage() const;
     std::string getNick() const;
