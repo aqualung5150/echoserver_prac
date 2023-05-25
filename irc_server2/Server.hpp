@@ -23,6 +23,7 @@ private:
     std::vector<Channel*> _channels;
     std::string _password;
 public:
+    Server(std::string& password);
     void startServer(int port);
 
     //getters

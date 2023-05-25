@@ -1,5 +1,10 @@
 #include "Server.hpp"
 
+Server::Server(std::string& password)
+: _password(password)
+{
+}
+
 static void ft_bzero(void *s, size_t n)
 {
     size_t	i;
