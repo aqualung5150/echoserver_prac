@@ -44,6 +44,16 @@ Command::Command(Server *server, User *sender)
 //     std::cout << "------------" << std::endl;
 // }
 
+void Command::execute()
+{
+    if (!_command.compare("NICK"))
+        NICK();
+    if (!_command.compare("USER"))
+        USER();
+    if (!_command.compare("QUIT"))
+        QUIT();
+}
+
 void Command::NICK()
 {
     if (_params.size() != 1 || !_trailing.empty())
@@ -53,6 +63,9 @@ void Command::NICK()
         write(_sender->getSocket(), reply.c_str(), reply.length());
         return;
     }
+
+    if (!_params[0].compare(_sender->getNick()))
+        return;
 
     for (std::map<int, User*>::iterator it = _server->getUsers().begin(); it != _server->getUsers().end(); ++it)
     {
@@ -66,6 +79,16 @@ void Command::NICK()
     }
 
     _sender->setNick(_params[0]);
+
+    // Change nick
+    if (_sender->getConnected())
+    {
+        std::string reply = ":ft_irc NICK :" + _sender->getNick() + "\r\n";
+        write(_sender->getSocket(), reply.c_str(), reply.length());
+        return;
+    }
+    
+    // Init nick (first connection - RPL_WELCOME)
     if (!_sender->getConnected() && !_sender->getNick().empty() && !_sender->getUsername().empty() && !_sender->getRealname().empty())
     {
         std::string reply;
@@ -86,7 +109,17 @@ void Command::USER()
 {
     if (_params.size() != 3 || _trailing.empty())
     {
-        //err
+        // ERR_NEEDMOREPARAMS (매크로로 재활용 가능)
+        std::string reply = ":irc.local 461 * USER :Not enough parameters.\r\n";
+        write(_sender->getSocket(), reply.c_str(), reply.length());
+        return;
+    }
+    else if (_sender->getConnected())
+    {
+        // ERR_ALREADYREGISTRED
+        std::string reply = ":irc.local 462 " + _sender->getNick() + " :You may not reregister\r\n";
+        write(_sender->getSocket(), reply.c_str(), reply.length());
+        return;
     }
     else
     {
@@ -110,10 +143,7 @@ void Command::USER()
     }
 }
 
-void Command::execute()
+void Command::QUIT()
 {
-    if (!_command.compare("NICK"))
-        NICK();
-    if (!_command.compare("USER"))
-        USER();
+
 }

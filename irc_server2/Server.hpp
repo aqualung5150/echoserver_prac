@@ -19,6 +19,7 @@ class Channel;
 class Server
 {
 private:
+    std::vector<struct pollfd> _pollFD;
     std::map<int, User*> _users;
     std::vector<Channel*> _channels;
     std::string _password;

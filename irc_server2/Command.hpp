@@ -31,6 +31,7 @@ public:
     void execute();
     void NICK();
     void USER();
+    void QUIT();
 };
 
 #endif

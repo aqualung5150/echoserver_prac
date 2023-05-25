@@ -25,8 +25,6 @@ void Server::startServer(int port)
     socklen_t clientAddrSize;
     int polled;
 
-    std::vector<struct pollfd> pollFD;
-
     listenSock = socket(PF_INET, SOCK_STREAM, 0);
     ft_bzero(&listenAddr, sizeof(listenAddr));
     listenAddr.sin_family = AF_INET;
@@ -39,13 +37,13 @@ void Server::startServer(int port)
     struct pollfd listenPoll;
     listenPoll.fd = listenSock;
     listenPoll.events = POLLIN;
-    pollFD.push_back(listenPoll);
+    _pollFD.push_back(listenPoll);
 
     while (1)
     {
-        polled = poll(&pollFD[0], pollFD.size(), 5000);
+        polled = poll(&_pollFD[0], _pollFD.size(), 5000);
 
-        if (pollFD[0].revents & POLLIN)
+        if (_pollFD[0].revents & POLLIN)
         {
             clientAddrSize = sizeof(clientAddr);
             clientSock = accept(listenSock, (struct sockaddr *)&clientAddr, &clientAddrSize);
@@ -54,7 +52,7 @@ void Server::startServer(int port)
             struct pollfd newPoll;
             newPoll.fd = clientSock;
             newPoll.events = POLLIN;
-            pollFD.push_back(newPoll);
+            _pollFD.push_back(newPoll);
 
             User *newUser = new User;
 
@@ -66,9 +64,9 @@ void Server::startServer(int port)
             continue;
         }
 
-        std::vector<struct pollfd>::iterator it = pollFD.begin();
+        std::vector<struct pollfd>::iterator it = _pollFD.begin();
         ++it; // 서버소켓(client[0]) 건너뛰기
-        while (it != pollFD.end())
+        while (it != _pollFD.end())
         {
             // 연결 종료
             if (it->revents & POLLHUP)
@@ -77,7 +75,7 @@ void Server::startServer(int port)
                 delete _users.at(it->fd);
                 close(it->fd);
                 _users.erase(it->fd);
-                it = pollFD.erase(it);
+                it = _pollFD.erase(it);
                 continue;
             }
 
@@ -90,7 +88,7 @@ void Server::startServer(int port)
                     delete _users.at(it->fd);
                     close(it->fd);
                     _users.erase(it->fd);
-                    it = pollFD.erase(it);
+                    it = _pollFD.erase(it);
                     continue;
                 }
             }
