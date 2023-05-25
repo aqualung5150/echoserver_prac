@@ -26,6 +26,11 @@ public:
 
     // test
     void testPrint();
+
+    // execute
+    void execute();
+    void NICK();
+    void USER();
 };
 
 #endif

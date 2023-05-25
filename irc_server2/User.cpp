@@ -20,10 +20,16 @@ int User::readMessage(int socket)
     while (_message.find("\r\n") != std::string::npos)
     {
         Command command(_server, this);
-        command.testPrint();
+        // command.testPrint();
+        command.execute();
         _message = _message.erase(0, _message.find("\r\n") + 2); // trim used message
     }
     return (1);
+}
+
+void User::setServer(Server *server)
+{
+    _server = server;
 }
 
 void User::setSocket(int fd)
@@ -31,9 +37,19 @@ void User::setSocket(int fd)
     _socket = fd;
 }
 
-void User::setServer(Server *server)
+void User::setNick(std::string &nick)
 {
-    _server = server;
+    _nick = nick;
+}
+
+void User::setUsername(std::string &username)
+{
+    _username = username;
+}
+
+void User::setRealname(std::string &realname)
+{
+    _realname = realname;
 }
 
 int User::getSocket() const
@@ -44,4 +60,19 @@ int User::getSocket() const
 std::string User::getMessage() const
 {
     return _message;
+}
+
+std::string User::getNick() const
+{
+    return _nick;
+}
+
+std::string User::getUsername() const
+{
+    return _username;
+}
+
+std::string User::getRealname() const
+{
+    return _realname;
 }

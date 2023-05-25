@@ -39,11 +39,17 @@ public:
     int readMessage(int socket);
 
     //setters
-    void setSocket(int fd);
     void setServer(Server *server);
+    void setSocket(int fd);
+    void setNick(std::string &nick);
+    void setUsername(std::string &username);
+    void setRealname(std::string &realname);
     //getters
     int getSocket() const;
     std::string getMessage() const;
+    std::string getNick() const;
+    std::string getUsername() const;
+    std::string getRealname() const;
 };
 
 #endif

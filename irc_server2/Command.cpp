@@ -9,9 +9,10 @@ Command::Command(Server *server, User *sender)
 
     message.erase(message.find("\r\n")); // crlf 제거
 
-    if (message.find(':') != std::string::npos) // _trailing (include ':')
+    if (message.find(':') != std::string::npos) // _trailing
     {
-        _trailing.append(message.substr(message.find(':')));
+        _trailing.append(message.substr(message.find(':') + 1)); //(exclude ':')
+        // _trailing.append(message.substr(message.find(':'))); //(include ':')
         message.erase(message.find(':')); // message에서 _trailing 제거
     }
 
@@ -41,4 +42,50 @@ void Command::testPrint()
     else
         std::cout << "Trailing :\t" << _trailing << std::endl;
     std::cout << "------------" << std::endl;
+}
+
+void Command::NICK()
+{
+    if (_params.size() != 1 || !_trailing.empty())
+    {
+        // err
+    }
+    //else if (NICK IN USE)
+    else
+    {
+        _sender->setNick(_params[0]);
+    }
+}
+
+void Command::USER()
+{
+    if (_params.size() != 3 || _trailing.empty())
+    {
+        //err
+    }
+    else
+    {
+        _sender->setUsername(_params[0]);
+        _sender->setRealname(_trailing);
+    }
+
+    if (!_sender->getNick().empty() && !_sender->getUsername().empty() && !_sender->getRealname().empty())
+    {
+        std::string reply;
+        reply = ":seunchoi.ft_irc.com 001 " + _sender->getNick() + " :Welcome to ft_irc server!\r\n";
+
+        std::cout << "nick : " << _sender->getNick() << std::endl;
+        std::cout << "username : " << _sender->getUsername() << std::endl;
+        std::cout << "realname : " << _sender->getRealname() << std::endl;
+        
+        write(_sender->getSocket(), reply.c_str(), reply.length());
+    }
+}
+
+void Command::execute()
+{
+    if (!_command.compare("NICK"))
+        NICK();
+    if (!_command.compare("USER"))
+        USER();
 }
