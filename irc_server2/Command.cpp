@@ -29,21 +29,6 @@ Command::Command(Server *server, User *sender)
     }
 }
 
-// void Command::testPrint()
-// {
-//     if (_command.empty())
-//         std::cout << "Command :\tNone" << std::endl;
-//     else
-//         std::cout << "Command :\t" << _command << std::endl;
-//     for (std::vector<std::string>::iterator it = _params.begin(); it != _params.end(); ++it)
-//         std::cout << "Parameter :\t" << *it << std::endl;
-//     if (_trailing.empty())
-//         std::cout << "Trailing :\tNone" << std::endl;
-//     else
-//         std::cout << "Trailing :\t" << _trailing << std::endl;
-//     std::cout << "------------" << std::endl;
-// }
-
 void Command::execute()
 {
     if (!_command.compare("PASS"))
