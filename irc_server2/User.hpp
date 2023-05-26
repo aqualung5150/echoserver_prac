@@ -29,14 +29,12 @@ private:
     Server *_server;
     // Socket FD
     int _socket;
-    // Permission(Password)
-    // bool _permission;
+    //IPv4
+    std::string _ip;
     // Status
     int _status;
     // Registered
     bool _registered;
-    // // Connection Success
-    // bool _connected;
     // Command Message
     std::string _message;
     // int _readDone;
@@ -58,6 +56,7 @@ public:
     //setters
     void setServer(Server *server);
     void setSocket(int fd);
+    void setIP(std::string ip);
     // void setPermission(bool permission);
     // void setConnected(bool connected);
     void setStatus(int status);
@@ -68,6 +67,7 @@ public:
     //getters
     Server *getServer();
     int getSocket() const;
+    std::string getIP() const;
     // bool getPermission() const;
     // bool getConnected() const;
     int getStatus() const;

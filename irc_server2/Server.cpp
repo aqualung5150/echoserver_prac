@@ -60,7 +60,8 @@ void Server::startServer(int port)
             newUser->setServer(this);
             _users.insert(std::pair<int, User*>(clientSock, newUser));
 
-            std::cout << "connected : " << clientSock << std::endl;
+            newUser->setIP(inet_ntoa(clientAddr.sin_addr));
+            std::cout << "connected (fd: " << clientSock << ", IPv4: " << newUser->getIP() << ")" << std::endl;
             continue;
         }
 

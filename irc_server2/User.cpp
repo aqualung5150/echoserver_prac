@@ -20,7 +20,6 @@ int User::readMessage(int socket)
     while (_message.find("\r\n") != std::string::npos)
     {
         Command command(_server, this);
-        // command.testPrint();
         command.execute();
         _message = _message.erase(0, _message.find("\r\n") + 2); // trim used message
     }
@@ -40,10 +39,10 @@ void User::setSocket(int fd)
     _socket = fd;
 }
 
-// void User::setPermission(bool permission)
-// {
-//     _permission = permission;
-// }
+void User::setIP(std::string ip)
+{
+    _ip = ip;
+}
 
 void User::setStatus(int status)
 {
@@ -54,11 +53,6 @@ void User::setRegistered(bool registered)
 {
     _registered = registered;
 }
-
-// void User::setConnected(bool connected)
-// {
-//     _connected = connected;
-// }
 
 void User::setNick(std::string &nick)
 {
@@ -87,10 +81,10 @@ int User::getSocket() const
     return _socket;
 }
 
-// bool User::getPermission() const
-// {
-//     return _permission;
-// }
+std::string User::getIP() const
+{
+    return _ip;
+}
 
 int User::getStatus() const
 {
@@ -101,11 +95,6 @@ bool User::getRegistered() const
 {
     return _registered;
 }
-
-// bool User::getConnected() const
-// {
-//     return _connected;
-// }
 
 std::string User::getMessage() const
 {
