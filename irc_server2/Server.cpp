@@ -65,22 +65,11 @@ void Server::startServer(int port)
             continue;
         }
 
-        
-        // std::vector<struct pollfd>::iterator it = _pollFD.begin();
-        // it++;
-        // while (it != _pollFD.end())
         for (std::vector<struct pollfd>::iterator it = _pollFD.begin() + 1; it != _pollFD.end(); ++it)
         {
             // 연결 종료
             if (it->revents & POLLHUP)
             {
-                // std::cout << "Client socket:" << it->fd << " shutdown." << std::endl;
-                // delete _users.at(it->fd);
-                // close(it->fd);
-                // _users.erase(it->fd);
-                // it = _pollFD.erase(it);
-                // continue;
-
                 //DEBUG
                 std::cout << "POLLHUP disconnect" << std::endl;
 
@@ -95,13 +84,6 @@ void Server::startServer(int port)
             {
                 if (_users.at(it->fd)->readMessage(it->fd) <= 0)
                 {
-                    // std::cout << "Client socket:" << it->fd << " can not read" << std::endl;
-                    // delete _users.at(it->fd);
-                    // close(it->fd);
-                    // _users.erase(it->fd);
-                    // it = _pollFD.erase(it);
-                    // continue;
-
                     //DEBUG
                     std::cout << "POLLIN disconnect" << std::endl;
 
@@ -111,9 +93,6 @@ void Server::startServer(int port)
                     continue;
                 }
             }
-            // ++it;
-            // if (it == _pollFD.end())
-            //     break;
         }
     }
 }
@@ -126,10 +105,7 @@ void Server::disconnect(User *user)
     // leave channels;
     std::vector<Channel*> channels = user->getJoined();
     for (std::vector<Channel*>::iterator it = channels.begin(); it != channels.end(); ++it)
-    {
-        //속한 채널의 모든 유저에게 나간다고 알리기 (e.g. => :cc!root@127.0.0.1 QUIT :Quit: leaving)
         (*it)->kickUser(user->getNick());
-    }
 
 
     close(user->getSocket());

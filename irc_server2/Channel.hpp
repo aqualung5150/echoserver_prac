@@ -47,6 +47,7 @@ private:
 public:
     Channel(User *creater);
 
+    void sendReply(std::string& reply, User *except = NULL);
     void kickUser(std::string nick);
 };
 

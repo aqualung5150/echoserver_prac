@@ -8,6 +8,35 @@ Channel::Channel(User *creater)
     _operators.push_back(creater);
 }
 
+void Channel::sendReply(std::string& reply, User *except)
+{
+    std::vector<User*>::iterator it = _users.begin();
+
+    // Send to all users
+    // JOIN PART ...
+    if (except == NULL)
+    {
+        while (it != _users.end())    
+        {
+            send((*it)->getSocket(), reply.c_str(), reply.size(), MSG_DONTWAIT);
+            ++it;
+        }
+    }
+    // Execpt sender
+    // PRIVMSG, QUIT ...
+    else
+    {
+        while (it != _users.end())    
+        {
+            if (*it != except)
+            {
+                send((*it)->getSocket(), reply.c_str(), reply.size(), MSG_DONTWAIT);
+                ++it;
+            }
+        }
+    }
+}
+
 void Channel::kickUser(std::string nick)
 {
     std::vector<User*>::iterator it;
