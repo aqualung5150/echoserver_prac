@@ -35,6 +35,7 @@ public:
     void NICK();
     void USER();
     void QUIT();
+    void PRIVMSG();
     void JOIN();
 };
 

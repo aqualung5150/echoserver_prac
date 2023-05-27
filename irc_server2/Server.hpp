@@ -28,8 +28,12 @@ private:
 public:
     Server(std::string& password);
 
+    // While server running
     void startServer(int port);
     void disconnect(User *user);
+
+    // Get specific user
+    User* getUser(std::string& nick);
 
     //getters
     std::map<int, User*>& getUsers();

@@ -39,6 +39,8 @@ void Command::execute()
         USER();
     else if (!_command.compare("QUIT"))
         QUIT();
+    else if (!_command.compare("PRIVMSG"))
+        PRIVMSG();
     else if (!_command.compare("JOIN"))
         JOIN();
 }
@@ -181,6 +183,41 @@ void Command::QUIT()
     std::vector<Channel*> channels = _sender->getJoined();
     for (std::vector<Channel*>::iterator it = channels.begin(); it != channels.end(); ++it)
         (*it)->sendReply(reply, _sender);
+}
+
+void Command::PRIVMSG()
+{
+    if (_params.size() < 1 || _trailing.empty())
+    {
+        sendReply(_sender->getSocket(), ERR_NEEDMOREPARAMS(_server->getName(), _sender->getNick(), "PRIVMSG"));
+        return;
+    }
+
+    std::string reply = ":" + _sender->getNick() + "!" + _sender->getUsername() + "@" + _sender->getIP() + " PRIVMSG " + _params[0] + " " + _trailing + "\r\n";
+
+    // todo
+    // Msg to channel
+    if (_params[0][0] == '#')
+    {
+        // if( No such cahnnel - 403 )
+        // if( Not join the channel - ERR_CANNOTSENDTOCHAN - 404 )
+
+        /* ???
+        Channel* channel = _server->getChannel()
+        channel->sendAll(reply);
+        */
+        return ;
+    }
+
+    // No such nick - ERR_NOSUCHNICK - 401
+    if (_server->getUser(_params[0]) == NULL)
+    {
+        sendReply(_sender->getSocket(), ERR_NOSUCHNICK(_server->getName(), _sender->getNick(), _params[0]));
+        return ;
+    }
+
+    // Msg to user
+    sendReply(_server->getUser(_params[0])->getSocket(), reply);
 }
 
 void Command::JOIN()

@@ -44,7 +44,7 @@
 //#define ERR_ERRONEUSNICKNAME(servername, nick, newnick)
 //kick
 #define RPL_KICK(nick, name, ip, channel, target, message)		":" + nick + "!" + name + "@" + ip + " KICK " + channel + " " + target + " :" + message + "\r\n"
-#define ERR_CHANOPRIVSNEEDED(servername, nick, channel)	":" + servername + " 482 " + nick + " " + channel + " ::You must be a channel half-operator\r\n"
+#define ERR_CHANOPRIVSNEEDED(servername, nick, channel)	":" + servername + " 482 " + nick + " " + channel + " :You must be a channel half-operator\r\n"
 #define ERR_NOSUCHNICK(servername, nick, target)		":" + servername + " 401 " + nick + " " + target + " :No such nick/channel\r\n"
 //kill
 #define RPL_KILL(nick, name, ip, target, message)		":" + nick + "!" + name + "@" + ip + " KILL " + target + " " + message + "\r\n"

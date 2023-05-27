@@ -127,6 +127,16 @@ void Server::disconnect(User *user)
     delete user;
 }
 
+User* Server::getUser(std::string& nick)
+{
+    for (std::map<int, User*>::iterator it = _users.begin(); it != _users.end(); ++it)
+    {
+        if (!it->second->getNick().compare(nick))
+            return it->second;
+    }
+    return NULL;
+}
+
 std::map<int, User*>& Server::getUsers()
 {
     return _users;

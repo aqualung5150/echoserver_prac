@@ -37,6 +37,16 @@ void Channel::sendReply(std::string& reply, User *except)
     }
 }
 
+User* Channel::getUser(std::string& nick)
+{
+    for (std::vector<User*>::iterator it = _users.begin(); it != _users.end(); ++it)
+    {
+        if (!(*it)->getNick().compare(nick))
+            return *it;
+    }
+    return NULL;
+}
+
 void Channel::kickUser(std::string nick)
 {
     std::vector<User*>::iterator it;

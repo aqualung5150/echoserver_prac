@@ -63,6 +63,7 @@ public:
     Channel(User *creater);
 
     void sendReply(std::string& reply, User *except = NULL);
+    User* getUser(std::string& nick);
     void kickUser(std::string nick);
 };
 
