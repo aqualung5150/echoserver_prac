@@ -1,7 +1,7 @@
 #include "Server.hpp"
 
 Server::Server(std::string& password)
-: _password(password)
+: _name("ft_irc"), _password(password)
 {
 }
 
@@ -164,4 +164,9 @@ std::vector<Channel*>& Server::getChannels()
 std::string Server::getPassword() const
 {
     return _password;
+}
+
+std::string Server::getName() const
+{
+    return _name;
 }

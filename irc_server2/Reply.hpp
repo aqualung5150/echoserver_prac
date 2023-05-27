@@ -8,6 +8,10 @@
 // #define RPL_MYINFO(nick)	":IRC 004" + nick + ":<servername> <version> <available user modes> <available channel modes>"
 //unknown command
 #define ERR_UNKNOWNCOMMAND(servername, nick, command)	":" + servername + " 421 " + nick + " " + command + ":Unknown command\r\n"
+//need more parameter
+#define ERR_NEEDMOREPARAMS(servername, command)         ":" + servername + " 461 * " + command + " :Not enough parameters.\r\n"
+//already registered
+#define ERR_ALREADYREGISTRED(servername, nick)          ":" + servername + " 462 " + nick + " :You may not reregister\r\n"
 //msg
 #define RPL_PRIVMSG(nick, name, ip, receiver, message)	":" + nick + "!" + name + "@" + ip + " PRIVMSG " + receiver + " :" + message + "\r\n"
 //notice
@@ -33,7 +37,8 @@
 #define RPL_INVITED(nick, name, ip, target, channel)	":" + nick + "!" + name + "@" + ip + " INVITE " + target + " :" + channel + "\r\n"
 //nick
 #define RPL_NICK(nick, name, ip , newnick)				":" + nick + "!" + name + "@" + ip + " NICK " + newnick + "\r\n"
-#define ERR_NICKNAMEINUSE(servername, nick, newnick)	":" + servername + " 433 " + nick + " " + newnick + " :Nickname is already in use." + "\r\n"
+#define ERR_NICKNAMEINUSE(servername, newnick)	":" + servername + " 433 * " + newnick + " :Nickname is already in use." + "\r\n"
+// #define ERR_NICKNAMEINUSE(servername, nick, newnick)	":" + servername + " 433 " + nick + " " + newnick + " :Nickname is already in use." + "\r\n"
 //#define ERR_ERRONEUSNICKNAME(servername, nick, newnick)
 //kick
 #define RPL_KICK(nick, name, ip, channel, target, message)		":" + nick + "!" + name + "@" + ip + " KICK " + channel + " " + target + " :" + message + "\r\n"

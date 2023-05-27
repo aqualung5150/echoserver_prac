@@ -41,13 +41,41 @@ void Command::execute()
         QUIT();
 }
 
+void Command::sendReply(int fd, std::string reply)
+{
+    int ret;
+
+	ret = send(fd, reply.c_str(), reply.size(), MSG_DONTWAIT);
+	if (ret == -1)
+		std::cerr << "Error: " << reply.c_str() << std::endl;
+	std::cout << "Send to client " << fd << std::endl;
+	std::cout << reply << std::endl;
+}
+
+void Command::connect()
+{
+    if (_sender->getStatus() == ALLOWED && !_sender->getNick().empty() && _sender->getRegistered())
+    {
+        int socket = _sender->getSocket();
+
+        _sender->setStatus(CONNECTED);
+        // RPL_WELCOME
+        sendReply(socket, RPL_WELCOME(_server->getName(), _sender->getNick(), _sender->getUsername(), _sender->getIP()));
+        // RPL_YOURHOST
+        sendReply(socket, RPL_YOURHOST(_server->getName(), _sender->getNick()));
+        // RPL_CREATED
+        sendReply(socket, RPL_CREATED(_server->getName(), _sender->getNick()));
+
+        std::cout << _sender->getNick() << " has joined the server." << std::endl;
+    }
+}
+
 void Command::NICK()
 {
-    if (_params.size() != 1 || !_trailing.empty())
+    if (_params.size() < 1 || !_trailing.empty())
     {
-        // ERR_NEEDMOREPARAMS (매크로로 재활용 가능)
-        std::string reply = ":irc.local 461 * NICK :Not enough parameters.\r\n";
-        write(_sender->getSocket(), reply.c_str(), reply.length());
+        // ERR_NEEDMOREPARAMS
+        sendReply(_sender->getSocket(), ERR_NEEDMOREPARAMS(_server->getName(), "NICK"));
         return;
     }
 
@@ -59,97 +87,77 @@ void Command::NICK()
         if (!_params[0].compare(it->second->getNick()))
         {
             // ERR_NICKNAMEINUSE
-            std::string reply = ":ft_irc 433 * " + _params[0] + " :Nickname is already in use.\r\n";
-            write(_sender->getSocket(), reply.c_str(), reply.length());
+            sendReply(_sender->getSocket(), ERR_NICKNAMEINUSE(_server->getName(), _params[0]));
             return;
         }
     }
 
-    _sender->setNick(_params[0]);
-
     // Change nick
     if (_sender->getStatus() == CONNECTED)
     {
-        std::string reply = ":ft_irc NICK :" + _sender->getNick() + "\r\n";
-        write(_sender->getSocket(), reply.c_str(), reply.length());
+        std::string reply = ":" + _sender->getNick() + "!" + _sender->getUsername() + "@" + _sender->getIP() + " NICK :" + _params[0] + "\r\n";
+        sendReply(_sender->getSocket(), reply);
+        _sender->setNick(_params[0]);
         return;
     }
-    
-    // Init nick (first connection - RPL_WELCOME)
-    if (_sender->getStatus() == ALLOWED && !_sender->getNick().empty() && _sender->getRegistered())
+    // First connection
+    else
     {
-        std::string reply;
-
-        _sender->setStatus(CONNECTED);
-        // RPL_WELCOME
-        reply = ":ft_irc 001 " + _sender->getNick() + " :Welcome to ft_irc server! " + _sender->getNick() + "\r\n";
-
-        std::cout << _sender->getNick() << " has joined the server." << std::endl;
-        // std::cout << "username : " << _sender->getUsername() << std::endl;
-        // std::cout << "realname : " << _sender->getRealname() << std::endl;
-
-        write(_sender->getSocket(), reply.c_str(), reply.length());
+        _sender->setNick(_params[0]);
+        connect();
     }
 }
 
 void Command::USER()
 {
-    if (_params.size() != 3 || _trailing.empty())
+    if (_params.size() < 3 || _trailing.empty())
     {
-        // ERR_NEEDMOREPARAMS (매크로로 재활용 가능)
-        std::string reply = ":irc.local 461 * USER :Not enough parameters.\r\n";
-        write(_sender->getSocket(), reply.c_str(), reply.length());
+        // ERR_NEEDMOREPARAMS
+        sendReply(_sender->getSocket(), ERR_NEEDMOREPARAMS(_server->getName(), "USER"));
         return;
     }
     else if (_sender->getRegistered())
     {
         // ERR_ALREADYREGISTRED
-        std::string reply = ":irc.local 462 " + _sender->getNick() + " :You may not reregister\r\n";
-        write(_sender->getSocket(), reply.c_str(), reply.length());
+        sendReply(_sender->getSocket(), ERR_ALREADYREGISTRED(_server->getName(), _sender->getNick()));
         return;
     }
-    else
-    {
-        _sender->setUsername(_params[0]);
-        _sender->setRealname(_trailing);
-        _sender->setRegistered(true);
-    }
 
-    if (_sender->getStatus() == ALLOWED && !_sender->getNick().empty() && _sender->getRegistered())
-    {
-        std::string reply;
+    // Register
+    _sender->setUsername(_params[0]);
+    _sender->setRealname(_trailing);
+    _sender->setRegistered(true);
 
-        _sender->setStatus(CONNECTED);
-        // RPL_WELCOME
-        reply = ":ft_irc 001 " + _sender->getNick() + " :Welcome to ft_irc server! " + _sender->getNick() + "\r\n";
-
-        std::cout << _sender->getNick() << " has joined the server." << std::endl;
-        // std::cout << "username : " << _sender->getUsername() << std::endl;
-        // std::cout << "realname : " << _sender->getRealname() << std::endl;
-
-        write(_sender->getSocket(), reply.c_str(), reply.length());
-    }
+    // RPL_WELCOME
+    connect();
 }
 
 void Command::QUIT()
 {
-    // 채널에서 유저 지우기
-    // std::vector<Channel*> channels = _sender->getJoined();
-
-    // for (std::vector<Channel*>::iterator it = channels.begin(); it != channels.end(); ++it)
-    //     (*it)->kickUser(_sender->getNick());
-    // _server->disconnect(_sender);
-    
     _sender->setStatus(DELETE);
-    // reply (ERROR: Closing Link)
+
+    std::string reply;
+    if (_trailing.empty())
+        reply = "ERROR :Closing link: (" + _sender->getUsername() + "@" + _sender->getIP() + ") [Client exited]\r\n";
+    else
+        reply = "ERROR :Closing link: (" + _sender->getUsername() + "@" + _sender->getIP() + ") [QUIT: " + _trailing + "]\r\n";
+
+    sendReply(_sender->getSocket(), reply);
 }
 
 void Command::PASS()
 {
-    //temp
+    if (_params.size() < 1)
+    {
+        sendReply(_sender->getSocket(), ERR_NEEDMOREPARAMS(_server->getName(), "PASS"));
+        return;
+    }
+
     if (_params[0].compare(_server->getPassword()))
+    {
         _sender->setStatus(DELETE);
-        // reply (ERROR: Closing Link)
+        std::string reply = "ERROR :Closing link: (" + _sender->getUsername() + "@" + _sender->getIP() + ") [Access denied by configuration]\r\n";
+    }
     else
         _sender->setStatus(ALLOWED);
 }

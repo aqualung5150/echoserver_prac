@@ -19,10 +19,12 @@ class Channel;
 class Server
 {
 private:
+    std::string _name;
+    std::string _password;
+
     std::vector<struct pollfd> _pollFD;
     std::map<int, User*> _users;
     std::vector<Channel*> _channels;
-    std::string _password;
 public:
     Server(std::string& password);
 
@@ -33,6 +35,7 @@ public:
     std::map<int, User*>& getUsers();
     std::vector<Channel*>& getChannels();
     std::string getPassword() const;
+    std::string getName() const;
 };
 
 #endif

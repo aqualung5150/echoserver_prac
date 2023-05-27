@@ -25,6 +25,8 @@ public:
 
     // execute
     void execute();
+    void sendReply(int fd, std::string message);
+    void connect();
     void NICK();
     void USER();
     void QUIT();
