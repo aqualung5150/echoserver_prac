@@ -1,12 +1,17 @@
 #include "Channel.hpp"
 
-Channel::Channel(User *creater)
-: _topic(""), _inviteOnly(false), _restrictedTopic(true), _password("")
+Channel::Channel()
+: _name(""), _topic("default topic"), _inviteOnly(false), _restrictedTopic(true), _password("")
 {
-    // _users.insert(std::pair<int, User*>(creater->getSocket(), creater));
-    _users.push_back(creater);
-    _operators.push_back(creater);
 }
+
+// Channel::Channel(std::string name, User *creater)
+// : _name(name), _topic(""), _inviteOnly(false), _restrictedTopic(true), _password("")
+// {
+//     // _users.insert(std::pair<int, User*>(creater->getSocket(), creater));
+//     _users.push_back(creater);
+//     _operators.push_back(creater);
+// }
 
 void Channel::sendReply(std::string& reply, User *except)
 {
@@ -29,10 +34,8 @@ void Channel::sendReply(std::string& reply, User *except)
         while (it != _users.end())    
         {
             if (*it != except)
-            {
                 send((*it)->getSocket(), reply.c_str(), reply.size(), MSG_DONTWAIT);
-                ++it;
-            }
+            ++it;
         }
     }
 }
@@ -47,7 +50,7 @@ User* Channel::getUser(std::string& nick)
     return NULL;
 }
 
-void Channel::kickUser(std::string nick)
+void Channel::deleteUser(std::string nick)
 {
     std::vector<User*>::iterator it;
 
@@ -63,7 +66,7 @@ void Channel::kickUser(std::string nick)
     }
 
     it = _operators.begin();
-    while (it != _users.end())
+    while (it != _operators.end())
     {
         if (!nick.compare((*it)->getNick()))
         {
@@ -72,4 +75,60 @@ void Channel::kickUser(std::string nick)
         }
         ++it;
     }
+}
+
+void Channel::deleteOperator(std::string nick)
+{
+    std::vector<User*>::iterator it;
+
+    it = _operators.begin();
+    while (it != _operators.end())
+    {
+        if (!nick.compare((*it)->getNick()))
+        {
+            _operators.erase(it);
+            break;
+        }
+        ++it;
+    }
+}
+
+bool Channel::isOperator(User* user)
+{
+    for (std::vector<User*>::iterator it = _operators.begin(); it != _operators.end(); ++it)
+    {
+        if (*it == user)
+            return true;
+    }
+    return false;
+}
+
+void Channel::setName(std::string& name)
+{
+    _name = name;
+}
+
+void Channel::addUser(User* user)
+{
+    _users.push_back(user);
+}
+
+void Channel::addOperator(User* user)
+{
+    _operators.push_back(user);
+}
+
+//getters
+std::string Channel::getName() const
+{
+    return _name;
+}
+
+std::vector<User*> Channel::getUsers()
+{
+    return _users;
+}
+std::vector<User*> Channel::getOperators()
+{
+    return _operators;
 }

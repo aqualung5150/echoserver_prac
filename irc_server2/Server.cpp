@@ -105,7 +105,7 @@ void Server::disconnect(User *user)
     // leave channels;
     std::vector<Channel*> channels = user->getJoined();
     for (std::vector<Channel*>::iterator it = channels.begin(); it != channels.end(); ++it)
-        (*it)->kickUser(user->getNick());
+        (*it)->deleteUser(user->getNick());
 
 
     close(user->getSocket());
@@ -135,6 +135,21 @@ User* Server::getUser(std::string& nick)
             return it->second;
     }
     return NULL;
+}
+
+Channel* Server::getChannel(std::string& channel)
+{
+    for (std::vector<Channel*>::iterator it = _channels.begin(); it != _channels.end(); ++it)
+    {
+        if (!(*it)->getName().compare(channel))
+            return *it;
+    }
+    return NULL;
+}
+
+void Server::addChannel(Channel* channel)
+{
+    _channels.push_back(channel);
 }
 
 std::map<int, User*>& Server::getUsers()

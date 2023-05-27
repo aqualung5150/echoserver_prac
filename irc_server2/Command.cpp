@@ -195,18 +195,28 @@ void Command::PRIVMSG()
 
     std::string reply = ":" + _sender->getNick() + "!" + _sender->getUsername() + "@" + _sender->getIP() + " PRIVMSG " + _params[0] + " " + _trailing + "\r\n";
 
-    // todo
     // Msg to channel
     if (_params[0][0] == '#')
     {
         // if( No such cahnnel - 403 )
-        // if( Not join the channel - ERR_CANNOTSENDTOCHAN - 404 )
+        //:irc.local 403 zzz #mmmm :No such channel
+        if (_server->getChannel(_params[0]) == NULL)
+        {
+            sendReply(_sender->getSocket(), ERR_NOSUCHCHANNEL(_server->getName(), _sender->getNick(), _params[0]));
+            return;
+        }
 
-        /* ???
-        Channel* channel = _server->getChannel()
-        channel->sendAll(reply);
-        */
-        return ;
+        // if( Not join the channel - ERR_CANNOTSENDTOCHAN - 404 )
+        //:irc.local 404 zzz #yyyy :You cannot send external messages to this channel whilst the +n (noextmsg) mode is set.
+        if (!_sender->isJoined(_params[0]))
+        {
+            sendReply(_sender->getSocket(), ERR_CANNOTSENDTOCHAN(_server->getName(), _sender->getNick(), _params[0]));
+            return;
+        }
+
+        // Send message every user in this channel except _sender
+        _server->getChannel(_params[0])->sendReply(reply, _sender);
+        return;
     }
 
     // No such nick - ERR_NOSUCHNICK - 401
@@ -220,6 +230,8 @@ void Command::PRIVMSG()
     sendReply(_server->getUser(_params[0])->getSocket(), reply);
 }
 
+
+//todo
 void Command::JOIN()
 {
     if (_params.size() < 1)
@@ -245,4 +257,45 @@ void Command::JOIN()
     }
     
     //todo
+
+    //reply
+    //:zzz!root@127.0.0.1 JOIN :#yyyy
+    std::string reply = ":" + _sender->getNick() + "!" + _sender->getUsername() + "@" + _sender->getIP() + " JOIN :" + _params[0] + "\r\n";
+    //Create channel
+    if (_server->getChannel(_params[0]) == NULL)
+    {
+        Channel* newChannel = new Channel();
+        newChannel->setName(_params[0]);
+        newChannel->addUser(_sender);
+        newChannel->addOperator(_sender);
+
+        _server->addChannel(newChannel);
+        _sender->addJoined(newChannel);
+    }
+    // Join already exist
+    else
+    {
+        _server->getChannel(_params[0])->addUser(_sender);
+        _sender->addJoined(_server->getChannel(_params[0]));
+    }
+
+    Channel* channel = _server->getChannel(_params[0]);
+
+    //Make user list
+    std::string userList = "";
+    std::vector<User*> users = channel->getUsers();
+    for (std::vector<User*>::iterator it = users.begin(); it != users.end(); ++it)
+    {
+        if (channel->isOperator(*it))
+            userList += "@" + (*it)->getNick();
+        else
+            userList += (*it)->getNick();
+
+        if (it != users.end() - 1)
+            userList += " ";
+    }
+
+    channel->sendReply(reply);
+    sendReply(_sender->getSocket(), RPL_NAMEREPLY(_server->getName(), _sender->getNick(), _params[0], userList));
+    sendReply(_sender->getSocket(), RPL_ENDOFNAMES(_server->getName(), _sender->getNick(), _params[0]));
 }

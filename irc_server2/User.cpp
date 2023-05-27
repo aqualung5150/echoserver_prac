@@ -28,6 +28,16 @@ int User::readMessage(int socket)
     return (1);
 }
 
+bool User::isJoined(std::string channel)
+{
+    for (std::vector<Channel*>::iterator it = _joined.begin(); it != _joined.end(); ++it)
+    {
+        if (!(*it)->getName().compare(channel))
+            return true;
+    }
+    return false;
+}
+
 //setters
 void User::setServer(Server *server)
 {
@@ -67,6 +77,11 @@ void User::setUsername(std::string &username)
 void User::setRealname(std::string &realname)
 {
     _realname = realname;
+}
+
+void User::addJoined(Channel* channel)
+{
+    _joined.push_back(channel);
 }
 
 

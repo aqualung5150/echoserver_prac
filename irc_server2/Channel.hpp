@@ -60,11 +60,25 @@ private:
     */ 
    
 public:
-    Channel(User *creater);
+    Channel();
+    // Channel(std::string name, User *creater);
 
     void sendReply(std::string& reply, User *except = NULL);
     User* getUser(std::string& nick);
-    void kickUser(std::string nick);
+    bool isOperator(User* user);
+
+    //setters
+    void setName(std::string& name);
+
+    void addUser(User* user);
+    void addOperator(User* user);
+    void deleteUser(std::string nick);
+    void deleteOperator(std::string nick);
+
+    //getters
+    std::string getName() const;
+    std::vector<User*> getUsers();
+    std::vector<User*> getOperators();
 };
 
 #endif

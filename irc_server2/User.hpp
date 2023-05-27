@@ -53,23 +53,24 @@ public:
 
     int readMessage(int socket);
 
+    bool isJoined(std::string channel);
+
     //setters
     void setServer(Server *server);
     void setSocket(int fd);
     void setIP(std::string ip);
-    // void setPermission(bool permission);
-    // void setConnected(bool connected);
     void setStatus(int status);
     void setRegistered(bool connected);
     void setNick(std::string &nick);
     void setUsername(std::string &username);
     void setRealname(std::string &realname);
+
+    void addJoined(Channel* channel);
+
     //getters
     Server *getServer();
     int getSocket() const;
     std::string getIP() const;
-    // bool getPermission() const;
-    // bool getConnected() const;
     int getStatus() const;
     bool getRegistered() const;
     std::string getMessage() const;

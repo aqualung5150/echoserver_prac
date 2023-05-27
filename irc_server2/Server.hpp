@@ -32,8 +32,11 @@ public:
     void startServer(int port);
     void disconnect(User *user);
 
-    // Get specific user
+    // Get specific object
     User* getUser(std::string& nick);
+    Channel* getChannel(std::string& channel);
+
+    void addChannel(Channel* channel);
 
     //getters
     std::map<int, User*>& getUsers();

@@ -30,8 +30,8 @@
 #define ERR_PASSWDMISMATCH(ip, user)					":" + ip + " 464 " + user + " :Password incorrect.\r\n"
 //join
 #define RPL_JOIN(nick, name, ip, channel)				":" + nick + "!" + name + "@" + ip + " JOIN :" + channel + "\r\n"
-#define RPL_NAMEREPLY(nick, servername, channel, users)	":" + servername + " 353 " + nick + " = " + channel + " :" + users + "\r\n"
-#define RPL_ENDOFNAMES(nick, servername, channel)		":" + servername + " 366 " + nick + " " + channel + " :End of /NAMES list.\r\n"
+#define RPL_NAMEREPLY(servername, nick, channel, users)	":" + servername + " 353 " + nick + " = " + channel + " :" + users + "\r\n"
+#define RPL_ENDOFNAMES(servername, nick, channel)		":" + servername + " 366 " + nick + " " + channel + " :End of /NAMES list.\r\n"
 //#define ERR_BANNEDFROMCHAN							": 474"
 //#define ERR_BADCHANNELKEY
 #define ERR_BADCHANMASK(servername, nick, channel)      ":" + servername + " 476 " + nick + " " + channel + " :Invalid channel name\r\n"
@@ -56,5 +56,9 @@
 //mode_channel
 #define RPL_CHANNELMODEMSG(nick, name, ip, channel, mode)	": :" + nick + "!" + name + "@" + ip + " MODE " + channel + " " + mode + "\r\n"
 #define RPL_CHANNELMODEMSGPARAM(nick, name, ip, channel, mode, param)	": :" + nick + "!" + name + "@" + ip + " MODE " + channel + " " + mode + " " + param "\r\n"
+//channel
+#define ERR_NOSUCHCHANNEL(servername, nick, channel)    ":" + servername + " 403 " + nick + " " + channel + " :No such channel\r\n"
+#define ERR_CANNOTSENDTOCHAN(servername, nick, channel) ":" + servername + " 404 " + nick + " " + channel + " ::You cannot send external messages to this channel\r\n"
+
 
 #endif
