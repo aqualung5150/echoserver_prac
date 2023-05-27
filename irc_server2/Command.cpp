@@ -39,6 +39,8 @@ void Command::execute()
         USER();
     else if (!_command.compare("QUIT"))
         QUIT();
+    else if (!_command.compare("JOIN"))
+        JOIN();
 }
 
 static void sendReply(int fd, std::string reply)
@@ -54,7 +56,15 @@ static void sendReply(int fd, std::string reply)
 
 void Command::connect()
 {
-    if (_sender->getStatus() == ALLOWED && !_sender->getNick().empty() && _sender->getRegistered())
+    if (_sender->getStatus() == NOPASS && _sender->getNick().compare("*") && _sender->getRegistered())
+    {
+        _sender->setStatus(DELETE);
+        std::string reply = "ERROR :Closing link: (" + _sender->getUsername() + "@" + _sender->getIP() + ") [Access denied by configuration]\r\n";
+        sendReply(_sender->getSocket(), reply);
+        return ;
+    }
+
+    if (_sender->getStatus() == ALLOWED && _sender->getNick().compare("*") && _sender->getRegistered())
     {
         int socket = _sender->getSocket();
 
@@ -70,12 +80,30 @@ void Command::connect()
     }
 }
 
+void Command::PASS()
+{
+    if (_params.size() < 1)
+    {
+        sendReply(_sender->getSocket(), ERR_NEEDMOREPARAMS(_server->getName(), "*", "PASS"));
+        return;
+    }
+
+    if (_params[0].compare(_server->getPassword()))
+    {
+        _sender->setStatus(DELETE);
+        std::string reply = "ERROR :Closing link: (" + _sender->getUsername() + "@" + _sender->getIP() + ") [Access denied by configuration]\r\n";
+        sendReply(_sender->getSocket(), reply);
+    }
+    else
+        _sender->setStatus(ALLOWED);
+}
+
 void Command::NICK()
 {
     if (_params.size() < 1 || !_trailing.empty())
     {
         // ERR_NEEDMOREPARAMS
-        sendReply(_sender->getSocket(), ERR_NEEDMOREPARAMS(_server->getName(), "NICK"));
+        sendReply(_sender->getSocket(), ERR_NEEDMOREPARAMS(_server->getName(), _sender->getNick(), "NICK"));
         return;
     }
 
@@ -87,7 +115,7 @@ void Command::NICK()
         if (!_params[0].compare(it->second->getNick()))
         {
             // ERR_NICKNAMEINUSE
-            sendReply(_sender->getSocket(), ERR_NICKNAMEINUSE(_server->getName(), _params[0]));
+            sendReply(_sender->getSocket(), ERR_NICKNAMEINUSE(_server->getName(), _sender->getNick(), _params[0]));
             return;
         }
     }
@@ -113,7 +141,7 @@ void Command::USER()
     if (_params.size() < 3 || _trailing.empty())
     {
         // ERR_NEEDMOREPARAMS
-        sendReply(_sender->getSocket(), ERR_NEEDMOREPARAMS(_server->getName(), "USER"));
+        sendReply(_sender->getSocket(), ERR_NEEDMOREPARAMS(_server->getName(), _sender->getNick(), "USER"));
         return;
     }
     else if (_sender->getRegistered())
@@ -155,20 +183,29 @@ void Command::QUIT()
         (*it)->sendReply(reply, _sender);
 }
 
-void Command::PASS()
+void Command::JOIN()
 {
     if (_params.size() < 1)
     {
-        sendReply(_sender->getSocket(), ERR_NEEDMOREPARAMS(_server->getName(), "PASS"));
+        sendReply(_sender->getSocket(), ERR_NEEDMOREPARAMS(_server->getName(), _sender->getNick(), "PASS"));
         return;
     }
 
-    if (_params[0].compare(_server->getPassword()))
+    // Not registered
+    // :irc.local 451 <nick> JOIN :You have not registered.
+    if (_sender->getStatus() != CONNECTED)
     {
-        _sender->setStatus(DELETE);
-        std::string reply = "ERROR :Closing link: (" + _sender->getUsername() + "@" + _sender->getIP() + ") [Access denied by configuration]\r\n";
-        sendReply(_sender->getSocket(), reply);
+        sendReply(_sender->getSocket(), ERR_NOTREGISTERED(_server->getName(), _sender->getNick(), "JOIN"));
+        return;
     }
-    else
-        _sender->setStatus(ALLOWED);
+
+    // NO # sign - ERR_BADCHANMASK
+    //:irc.local 476 <nick> tradis :Invalid channel name
+    if (_params[0][0] != '#')
+    {
+        sendReply(_sender->getSocket(), ERR_BADCHANMASK(_server->getName(), _sender->getNick(), _params[0]));
+        return;
+    }
+    
+    //todo
 }

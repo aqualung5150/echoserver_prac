@@ -6,6 +6,11 @@
 #include "Channel.hpp"
 #include "Reply.hpp"
 
+// MODE - Bit Mask
+// #define MODE_I 0x0001 // Invite mode
+// #define MODE_T 0x0002 // restrict topic mode
+// #define MODE_K 0x0004 // channel key
+
 class Server;
 
 class Command
@@ -26,10 +31,11 @@ public:
     // execute
     void execute();
     void connect();
+    void PASS();
     void NICK();
     void USER();
     void QUIT();
-    void PASS();
+    void JOIN();
 };
 
 #endif

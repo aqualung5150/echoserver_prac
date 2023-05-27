@@ -13,7 +13,7 @@ void Channel::sendReply(std::string& reply, User *except)
     std::vector<User*>::iterator it = _users.begin();
 
     // Send to all users
-    // JOIN PART ...
+    // JOIN PART MODE...
     if (except == NULL)
     {
         while (it != _users.end())    

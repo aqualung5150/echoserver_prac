@@ -23,6 +23,15 @@ private:
     bool _inviteOnly;       // default : false (MODE i)
     bool _restrictedTopic;  // defualt : true (MODE t)
     std::string _password;  // defualt : ""(false) - empty string (MODE k [password])
+
+    // MODE - Bit Mask
+    // #define I 0x0001
+    // #define T 0x0002
+    // #define K 0x0004
+    
+    // int _mode;
+    // std::string _key;
+    
     
     /*
     MODE
@@ -34,6 +43,12 @@ private:
     :irc.local 467 seunchoi #tradis :Channel key already set 라는 reply를 받음.
 
     -k 하려면 올바른 password를 파라미터로 받아야 함.
+
+    key를 변경하려면 -k 했다가 다시 +k 해줘야함
+
+    JOIN 할 때
+    JOIN #channel [wrong-password | no-parameter]일 때
+    :irc.local 475 zzz_ #tradis :Cannot join channel (incorrect channel key)를 받음.
 
     -------------------------------------------------------------------------
 

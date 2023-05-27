@@ -1,7 +1,7 @@
 #include "User.hpp"
 
 User::User()
-: _server(NULL), _socket(-1), _status(NOPASS), _registered(false), _message(""), _nick(""), _username(""), _realname("")
+: _server(NULL), _socket(-1), _status(NOPASS), _registered(false), _message(""), _nick("*"), _username("*"), _realname("*")
 {
 }
 
