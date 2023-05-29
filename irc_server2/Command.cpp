@@ -126,7 +126,13 @@ void Command::NICK()
     if (_sender->getStatus() == CONNECTED)
     {
         std::string reply = ":" + _sender->getNick() + "!" + _sender->getUsername() + "@" + _sender->getIP() + " NICK :" + _params[0] + "\r\n";
-        sendReply(_sender->getSocket(), reply);
+
+        sendReply(_sender->getSocket(), reply); // send to _sender
+
+        std::vector<Channel*> joined = _sender->getJoined(); // send to every user in joined channel
+        for (std::vector<Channel*>::iterator it = joined.begin(); it != joined.end(); ++it)
+            (*it)->sendReply(reply, _sender);
+
         _sender->setNick(_params[0]);
         return;
     }
@@ -193,7 +199,7 @@ void Command::PRIVMSG()
         return;
     }
 
-    std::string reply = ":" + _sender->getNick() + "!" + _sender->getUsername() + "@" + _sender->getIP() + " PRIVMSG " + _params[0] + " " + _trailing + "\r\n";
+    std::string reply = ":" + _sender->getNick() + "!" + _sender->getUsername() + "@" + _sender->getIP() + " PRIVMSG " + _params[0] + " :" + _trailing + "\r\n";
 
     // Msg to channel
     if (_params[0][0] == '#')

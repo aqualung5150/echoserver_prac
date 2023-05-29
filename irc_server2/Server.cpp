@@ -102,18 +102,24 @@ void Server::disconnect(User *user)
     std::cout << user->getNick() << " has left the server." << std::endl;
     std::cout << "fd:" << user->getSocket() << " shutdown." << std::endl;
 
-    // leave channels;
+    // leave joined channels;
     std::vector<Channel*> channels = user->getJoined();
     for (std::vector<Channel*>::iterator it = channels.begin(); it != channels.end(); ++it)
-        (*it)->deleteUser(user->getNick());
-
+    {
+        (*it)->removeUser(user->getNick());
+        if ((*it)->empty()) // terminate empty channel
+        {
+            delete *it;         // free channel object
+            removeChannel(*it); // remove on Server::_channels
+        }
+    }
 
     close(user->getSocket());
 
-    // delete on user list
+    // remove on user list
     _users.erase(user->getSocket());
     
-    // delete on pollfds
+    // remove on pollfds
     for (std::vector<struct pollfd>::iterator it = _pollFD.begin(); it != _pollFD.end(); ++it)
     {
         if (it->fd == user->getSocket())
@@ -150,6 +156,18 @@ Channel* Server::getChannel(std::string& channel)
 void Server::addChannel(Channel* channel)
 {
     _channels.push_back(channel);
+}
+
+void Server::removeChannel(Channel* channel)
+{
+    for (std::vector<Channel*>::iterator it = _channels.begin(); it != _channels.end(); ++it)
+    {
+        if (*it == channel)
+        {
+            _channels.erase(it);
+            return;
+        }
+    }
 }
 
 std::map<int, User*>& Server::getUsers()

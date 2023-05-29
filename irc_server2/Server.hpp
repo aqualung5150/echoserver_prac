@@ -37,6 +37,7 @@ public:
     Channel* getChannel(std::string& channel);
 
     void addChannel(Channel* channel);
+    void removeChannel(Channel* channel);
 
     //getters
     std::map<int, User*>& getUsers();

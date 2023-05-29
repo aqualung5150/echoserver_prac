@@ -66,14 +66,15 @@ public:
     void sendReply(std::string& reply, User *except = NULL);
     User* getUser(std::string& nick);
     bool isOperator(User* user);
+    bool empty();
 
     //setters
     void setName(std::string& name);
 
     void addUser(User* user);
     void addOperator(User* user);
-    void deleteUser(std::string nick);
-    void deleteOperator(std::string nick);
+    void removeUser(std::string nick);
+    void removeOperator(std::string nick);
 
     //getters
     std::string getName() const;

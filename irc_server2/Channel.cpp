@@ -36,6 +36,7 @@ void Channel::sendReply(std::string& reply, User *except)
             if (*it != except)
                 send((*it)->getSocket(), reply.c_str(), reply.size(), MSG_DONTWAIT);
             ++it;
+	        std::cout << reply << std::endl;
         }
     }
 }
@@ -50,7 +51,7 @@ User* Channel::getUser(std::string& nick)
     return NULL;
 }
 
-void Channel::deleteUser(std::string nick)
+void Channel::removeUser(std::string nick)
 {
     std::vector<User*>::iterator it;
 
@@ -77,7 +78,7 @@ void Channel::deleteUser(std::string nick)
     }
 }
 
-void Channel::deleteOperator(std::string nick)
+void Channel::removeOperator(std::string nick)
 {
     std::vector<User*>::iterator it;
 
@@ -101,6 +102,11 @@ bool Channel::isOperator(User* user)
             return true;
     }
     return false;
+}
+
+bool Channel::empty()
+{
+    return _users.empty();
 }
 
 void Channel::setName(std::string& name)
