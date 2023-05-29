@@ -30,6 +30,7 @@ public:
 
     // execute
     void execute();
+    void sendReply(int fd, std::string reply);
     void connect();
     void PASS();
     void NICK();

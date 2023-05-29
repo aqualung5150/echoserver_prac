@@ -13,7 +13,7 @@ Channel::Channel()
 //     _operators.push_back(creater);
 // }
 
-void Channel::sendReply(std::string& reply, User *except)
+void Channel::sendReply(std::string& reply, User* except)
 {
     std::vector<User*>::iterator it = _users.begin();
 
@@ -36,7 +36,6 @@ void Channel::sendReply(std::string& reply, User *except)
             if (*it != except)
                 send((*it)->getSocket(), reply.c_str(), reply.size(), MSG_DONTWAIT);
             ++it;
-	        std::cout << reply << std::endl;
         }
     }
 }
@@ -109,7 +108,7 @@ bool Channel::empty()
     return _users.empty();
 }
 
-void Channel::setName(std::string& name)
+void Channel::setName(std::string name)
 {
     _name = name;
 }

@@ -143,7 +143,7 @@ User* Server::getUser(std::string& nick)
     return NULL;
 }
 
-Channel* Server::getChannel(std::string& channel)
+Channel* Server::getChannel(std::string channel)
 {
     for (std::vector<Channel*>::iterator it = _channels.begin(); it != _channels.end(); ++it)
     {

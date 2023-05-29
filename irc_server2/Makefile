@@ -4,7 +4,13 @@ CXXFLAGS = -std=c++98
 INCLUDE = -I.
 NAME = ft_irc
 
-SRCS = main.cpp Server.cpp User.cpp Channel.cpp Command.cpp
+SRCS = main.cpp Server.cpp User.cpp Channel.cpp Command.cpp \
+JOIN.cpp \
+NICK.cpp \
+PASS.cpp \
+PRIVMSG.cpp \
+QUIT.cpp \
+USER_C.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 .cpp.o :

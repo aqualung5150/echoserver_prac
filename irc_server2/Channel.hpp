@@ -63,13 +63,13 @@ public:
     Channel();
     // Channel(std::string name, User *creater);
 
-    void sendReply(std::string& reply, User *except = NULL);
+    void sendReply(std::string& reply, User* except = NULL);
     User* getUser(std::string& nick);
     bool isOperator(User* user);
     bool empty();
 
     //setters
-    void setName(std::string& name);
+    void setName(std::string name);
 
     void addUser(User* user);
     void addOperator(User* user);

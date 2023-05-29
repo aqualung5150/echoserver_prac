@@ -34,7 +34,7 @@ public:
 
     // Get specific object
     User* getUser(std::string& nick);
-    Channel* getChannel(std::string& channel);
+    Channel* getChannel(std::string channel);
 
     void addChannel(Channel* channel);
     void removeChannel(Channel* channel);
