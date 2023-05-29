@@ -168,7 +168,7 @@ private:
     // MODE
     bool _inviteOnly;       // default : false (MODE i)
     bool _restrictedTopic;  // defualt : true (MODE t)
-    std::string _password;  // defualt : ""(false) - empty string (MODE k [password])
+    std::string _key;  // defualt : ""(false) - empty string (MODE k [password])
     
     /*
     MODE
@@ -192,7 +192,7 @@ private:
    
 public:
     Channel(User *creater)
-    : _topic(""), _inviteOnly(false), _restrictedTopic(true), _password("")
+    : _topic(""), _inviteOnly(false), _restrictedTopic(true), _key("")
     {
         _users.insert(std::pair<int, User*>(creater->getSocket(), creater));
         _operators.push_back(creater);

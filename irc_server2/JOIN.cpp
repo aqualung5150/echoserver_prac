@@ -96,6 +96,12 @@ void Command::JOIN()
             _server->addChannel(newChannel);
             _sender->addJoined(newChannel);
             channel = newChannel;
+            
+            //TEST TEST TEST TEST TEST TEST TEST TEST TEST 
+            if (!(channel->getMode() & MODE_I))
+                channel->addMode(MODE_I); // +i
+            if ((channel->getMode() & MODE_T))
+                channel->removeMode(MODE_T); // -t
         }
         // Join already exist
         else
@@ -103,8 +109,19 @@ void Command::JOIN()
             // TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
             // TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
             // if ( mode == +i ) - _sender.invited()?
+            if ((channel->getMode() & MODE_I))
+                std::cout << "INVITED ONLY" << std::endl;
+            else
+                std::cout << "NOT INVITED ONLY" << std::endl;
+
             // if ( mode == +k ) - it->sec == channel->_password ?
-            
+
+            // Bit Mask TEST 
+            if (channel->getMode() & MODE_T)
+                std::cout << "RESTRICTED TOPIC" << std::endl;
+            else
+                std::cout << "NOT RESTRICTED TOPIC" << std::endl;
+
             // if ( already in this channel ) ignore
             if (_sender->isJoined(it->first))
                 continue;

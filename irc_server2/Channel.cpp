@@ -1,7 +1,7 @@
 #include "Channel.hpp"
 
 Channel::Channel()
-: _name(""), _topic("default topic"), _inviteOnly(false), _restrictedTopic(true), _password("")
+: _name(""), _topic("default topic"), _mode(MODE_T), _key("")
 {
 }
 
@@ -136,6 +136,16 @@ void Channel::removeOperator(User* user)
     }
 }
 
+void Channel::addMode(int mode)
+{
+    _mode += mode;
+}
+
+void Channel::removeMode(int mode)
+{
+    _mode -= mode;
+}
+
 bool Channel::isOperator(User* user)
 {
     for (std::vector<User*>::iterator it = _operators.begin(); it != _operators.end(); ++it)
@@ -179,4 +189,9 @@ std::vector<User*> Channel::getUsers()
 std::vector<User*> Channel::getOperators()
 {
     return _operators;
+}
+
+int Channel::getMode() const
+{
+    return _mode;
 }

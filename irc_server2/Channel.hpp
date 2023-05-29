@@ -7,6 +7,10 @@
 #include <map>
 #include <vector>
 
+#define MODE_I 0x0001
+#define MODE_T 0x0002
+#define MODE_K 0x0004
+
 class User;
 
 class Channel
@@ -20,17 +24,17 @@ private:
     std::string _topic; // Channel's topic
 
     // MODE
-    bool _inviteOnly;       // default : false (MODE i)
-    bool _restrictedTopic;  // defualt : true (MODE t)
-    std::string _password;  // defualt : ""(false) - empty string (MODE k [password])
+    // bool _inviteOnly;       // default : false (MODE i)
+    // bool _restrictedTopic;  // defualt : true (MODE t)
+    // std::string _key;  // defualt : ""(false) - empty string (MODE k [password])
 
     // MODE - Bit Mask
     // #define I 0x0001
     // #define T 0x0002
     // #define K 0x0004
     
-    // int _mode;
-    // std::string _key;
+    int _mode;
+    std::string _key;
     
     
     /*
@@ -77,11 +81,14 @@ public:
     void removeUser(User* user);
     // void removeOperator(std::string nick);
     void removeOperator(User* user);
+    void addMode(int mode);
+    void removeMode(int mode);
 
     //getters
     std::string getName() const;
     std::vector<User*> getUsers();
     std::vector<User*> getOperators();
+    int getMode() const;
 };
 
 #endif
