@@ -55,8 +55,13 @@ void Command::PART()
         }
 
         channel->sendReply(reply);      //send message PART
-        channel->removeUser(_sender);   //remove from Channel::_users
         _sender->removeJoined(channel); //remove from User::_joined
+        channel->removeUser(_sender);   //remove from Channel::_users
+        if (channel->empty())
+        {
+            delete channel;
+            _server->removeChannel(channel);
+        }
     }
 
 }
