@@ -38,6 +38,7 @@ public:
     void QUIT();
     void PRIVMSG();
     void JOIN();
+    void PART();
 };
 
 #endif

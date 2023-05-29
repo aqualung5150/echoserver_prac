@@ -43,6 +43,8 @@ void Command::execute()
         PRIVMSG();
     else if (!_command.compare("JOIN"))
         JOIN();
+    else if (!_command.compare("PART"))
+        PART();
 }
 
 void Command::sendReply(int fd, std::string reply)

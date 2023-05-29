@@ -18,7 +18,5 @@ void Command::QUIT()
         reply = ":" + _sender->getNick() + "!" + _sender->getUsername() + "@" + _sender->getIP() + " QUIT :Client exited\r\n";
     else
         reply = ":" + _sender->getNick() + "!" + _sender->getUsername() + "@" + _sender->getIP() + " QUIT :Quit: " + _trailing + "\r\n";
-    std::vector<Channel*> channels = _sender->getJoined(); // multiple send to same user???
-    for (std::vector<Channel*>::iterator it = channels.begin(); it != channels.end(); ++it)
-        (*it)->sendReply(reply, _sender);
+        _sender->sendNoRepeat(reply);
 }

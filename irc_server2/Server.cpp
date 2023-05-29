@@ -106,7 +106,7 @@ void Server::disconnect(User *user)
     std::vector<Channel*> channels = user->getJoined();
     for (std::vector<Channel*>::iterator it = channels.begin(); it != channels.end(); ++it)
     {
-        (*it)->removeUser(user->getNick());
+        (*it)->removeUser(user);
         if ((*it)->empty()) // terminate empty channel
         {
             delete *it;         // free channel object

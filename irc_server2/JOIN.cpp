@@ -104,6 +104,11 @@ void Command::JOIN()
             // TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
             // if ( mode == +i ) - _sender.invited()?
             // if ( mode == +k ) - it->sec == channel->_password ?
+            
+            // if ( already in this channel ) ignore
+            if (_sender->isJoined(it->first))
+                continue;
+
             channel->addUser(_sender);
             _sender->addJoined(channel);
         }

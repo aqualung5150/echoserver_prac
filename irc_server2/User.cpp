@@ -38,6 +38,24 @@ bool User::isJoined(std::string channel)
     return false;
 }
 
+void User::sendNoRepeat(std::string& reply)
+{
+    std::vector<User*> targets;
+
+    for (std::vector<Channel*>::iterator it = _joined.begin(); it != _joined.end(); ++it)
+    {
+        std::vector<User*> users = (*it)->getUsers();
+        for (std::vector<User*>::iterator it2 = users.begin(); it2 != users.end(); ++it2)
+        {
+            if (std::find(targets.begin(), targets.end(), *it2) == targets.end() && (*it2) != this)
+                targets.push_back(*it2);
+        }
+    }
+
+    for (std::vector<User*>::iterator it = targets.begin(); it != targets.end(); ++it)
+        send((*it)->getSocket(), reply.c_str(), reply.size(), MSG_DONTWAIT);
+}
+
 //setters
 void User::setServer(Server *server)
 {
@@ -84,6 +102,13 @@ void User::addJoined(Channel* channel)
     _joined.push_back(channel);
 }
 
+void User::removeJoined(Channel* channel)
+{
+    std::vector<Channel *>::iterator target = std::find(_joined.begin(), _joined.end(), channel);
+
+    if (target != _joined.end())
+        _joined.erase(target);
+}
 
 //getters
 Server* User::getServer()

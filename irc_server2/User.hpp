@@ -10,6 +10,7 @@
 #include <sstream>
 #include <map>
 #include <vector>
+#include <algorithm>
 
 #define BUF_SIZE 512
 
@@ -54,6 +55,7 @@ public:
     int readMessage(int socket);
 
     bool isJoined(std::string channel);
+    void sendNoRepeat(std::string& reply); //send to _joined user no repeat(except _sender)
 
     //setters
     void setServer(Server *server);
@@ -66,6 +68,7 @@ public:
     void setRealname(std::string &realname);
 
     void addJoined(Channel* channel);
+    void removeJoined(Channel* channel);
 
     //getters
     Server *getServer();

@@ -50,14 +50,41 @@ User* Channel::getUser(std::string& nick)
     return NULL;
 }
 
-void Channel::removeUser(std::string nick)
+// void Channel::removeUser(std::string nick)
+// {
+//     std::vector<User*>::iterator it;
+
+//     it = _users.begin();
+//     while (it != _users.end())
+//     {
+//         if (!nick.compare((*it)->getNick()))
+//         {
+//             _users.erase(it);
+//             break;
+//         }
+//         ++it;
+//     }
+
+//     it = _operators.begin();
+//     while (it != _operators.end())
+//     {
+//         if (!nick.compare((*it)->getNick()))
+//         {
+//             _operators.erase(it);
+//             break;
+//         }
+//         ++it;
+//     }
+// }
+
+void Channel::removeUser(User* user)
 {
     std::vector<User*>::iterator it;
 
     it = _users.begin();
     while (it != _users.end())
     {
-        if (!nick.compare((*it)->getNick()))
+        if (*it == user)
         {
             _users.erase(it);
             break;
@@ -68,7 +95,7 @@ void Channel::removeUser(std::string nick)
     it = _operators.begin();
     while (it != _operators.end())
     {
-        if (!nick.compare((*it)->getNick()))
+        if (*it == user)
         {
             _operators.erase(it);
             break;
@@ -77,14 +104,30 @@ void Channel::removeUser(std::string nick)
     }
 }
 
-void Channel::removeOperator(std::string nick)
+// void Channel::removeOperator(std::string nick)
+// {
+//     std::vector<User*>::iterator it;
+
+//     it = _operators.begin();
+//     while (it != _operators.end())
+//     {
+//         if (!nick.compare((*it)->getNick()))
+//         {
+//             _operators.erase(it);
+//             break;
+//         }
+//         ++it;
+//     }
+// }
+
+void Channel::removeOperator(User* user)
 {
     std::vector<User*>::iterator it;
 
     it = _operators.begin();
     while (it != _operators.end())
     {
-        if (!nick.compare((*it)->getNick()))
+        if (*it == user)
         {
             _operators.erase(it);
             break;

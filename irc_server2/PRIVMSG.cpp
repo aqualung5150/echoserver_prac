@@ -8,7 +8,7 @@ void Command::PRIVMSG()
         return;
     }
 
-    std::string reply = ":" + _sender->getNick() + "!" + _sender->getUsername() + "@" + _sender->getIP() + " PRIVMSG " + _params[0] + " :" + _trailing + "\r\n";
+    
 
     //init parameters
     std::vector<std::string> target;
@@ -23,6 +23,9 @@ void Command::PRIVMSG()
 
     for (std::vector<std::string>::iterator it = target.begin(); it != target.end(); ++it)
     {
+        // make reply message
+        std::string reply = ":" + _sender->getNick() + "!" + _sender->getUsername() + "@" + _sender->getIP() + " PRIVMSG " + *it + " :" + _trailing + "\r\n";
+        
         // Msg to channel
         if ((*it)[0] == '#')
         {

@@ -10,7 +10,8 @@ NICK.cpp \
 PASS.cpp \
 PRIVMSG.cpp \
 QUIT.cpp \
-USER_C.cpp
+USER_C.cpp \
+PART.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 .cpp.o :

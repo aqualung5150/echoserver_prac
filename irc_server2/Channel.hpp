@@ -73,8 +73,10 @@ public:
 
     void addUser(User* user);
     void addOperator(User* user);
-    void removeUser(std::string nick);
-    void removeOperator(std::string nick);
+    // void removeUser(std::string nick);
+    void removeUser(User* user);
+    // void removeOperator(std::string nick);
+    void removeOperator(User* user);
 
     //getters
     std::string getName() const;
