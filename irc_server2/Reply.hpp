@@ -56,6 +56,7 @@
 //mode_channel
 #define RPL_CHANNELMODEMSG(nick, name, ip, channel, mode)	": :" + nick + "!" + name + "@" + ip + " MODE " + channel + " " + mode + "\r\n"
 #define RPL_CHANNELMODEMSGPARAM(nick, name, ip, channel, mode, param)	": :" + nick + "!" + name + "@" + ip + " MODE " + channel + " " + mode + " " + param "\r\n"
+#define ERR_UNKNOWNMODE(servername, nick, mode)         ":" + servername + " 472 " + nick + " " + mode + " :is not a recognised channel mode.\r\n"
 //channel
 #define ERR_NOSUCHCHANNEL(servername, nick, channel)    ":" + servername + " 403 " + nick + " " + channel + " :No such channel\r\n"
 #define ERR_CANNOTSENDTOCHAN(servername, nick, channel) ":" + servername + " 404 " + nick + " " + channel + " :You cannot send external messages to this channel\r\n"
