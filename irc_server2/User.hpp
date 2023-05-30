@@ -55,6 +55,7 @@ public:
     int readMessage(int socket);
 
     bool isJoined(std::string channel);
+    bool isInvited(Channel* channel);
     void sendNoRepeat(std::string& reply); //send to _joined user no repeat(except _sender)
 
     //setters

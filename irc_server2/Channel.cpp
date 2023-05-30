@@ -166,6 +166,11 @@ void Channel::setName(std::string name)
     _name = name;
 }
 
+void Channel::setKey(std::string key)
+{
+    _key = key;
+}
+
 void Channel::addUser(User* user)
 {
     _users.push_back(user);
@@ -194,4 +199,9 @@ std::vector<User*> Channel::getOperators()
 int Channel::getMode() const
 {
     return _mode;
+}
+
+std::string Channel::getKey() const
+{
+    return _key;
 }

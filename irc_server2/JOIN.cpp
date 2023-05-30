@@ -45,30 +45,6 @@ void Command::JOIN()
         nameBuf.clear();
     }
 
-    // init parameters
-    // std::vector<std::string> name;
-    // std::vector<std::string> key;
-
-    // std::string buf;
-    // std::stringstream stream;
-    // stream.str(_params[0]);
-
-    // while(std::getline(stream, buf, ','))
-    // {
-    //     name.push_back(buf);
-    //     buf.clear();
-    // }
-
-    // if (_params.size() > 1)
-    // {
-    //     stream.str(_params[1]);
-    //     while (std::getline(stream, buf, ','))
-    //     {
-    //         key.push_back(buf);
-    //         buf.clear();
-    //     }
-    // }
-
     for (std::map<std::string, std::string>::iterator it = nameKey.begin(); it != nameKey.end(); ++it)
     {
         // NO # sign - ERR_BADCHANMASK
@@ -82,10 +58,11 @@ void Command::JOIN()
         // Join the channel
         Channel* channel = _server->getChannel(it->first);
 
-        //reply
+        //reply to everyone on the channel
         //:zzz!root@127.0.0.1 JOIN :#yyyy
         std::string reply = ":" + _sender->getNick() + "!" + _sender->getUsername() + "@" + _sender->getIP() + " JOIN :" + it->first + "\r\n";
 
+        // Create new channel as operator
         if (channel == NULL)
         {
             Channel* newChannel = new Channel();
@@ -96,35 +73,36 @@ void Command::JOIN()
             _server->addChannel(newChannel);
             _sender->addJoined(newChannel);
             channel = newChannel;
-            
-            //TEST TEST TEST TEST TEST TEST TEST TEST TEST 
-            if (!(channel->getMode() & MODE_I))
-                channel->addMode(MODE_I); // +i
-            if ((channel->getMode() & MODE_T))
-                channel->removeMode(MODE_T); // -t
         }
         // Join already exist
         else
-        {
-            // TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
-            // TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
-            // if ( mode == +i ) - _sender.invited()?
-            if ((channel->getMode() & MODE_I))
-                std::cout << "INVITED ONLY" << std::endl;
-            else
-                std::cout << "NOT INVITED ONLY" << std::endl;
-
-            // if ( mode == +k ) - it->sec == channel->_password ?
-
-            // Bit Mask TEST 
-            if (channel->getMode() & MODE_T)
-                std::cout << "RESTRICTED TOPIC" << std::endl;
-            else
-                std::cout << "NOT RESTRICTED TOPIC" << std::endl;
-
+        {   
             // if ( already in this channel ) ignore
             if (_sender->isJoined(it->first))
                 continue;
+
+            if (_sender->isInvited(channel))
+            {
+                //join regardless of channel's mode
+            }
+            else if (channel->getMode() & (MODE_I | MODE_K))
+            {
+                // +k
+                if (channel->getMode() & MODE_K && channel->getKey().compare(it->second))
+                // mode +k but incorrect key
+                {
+                    sendReply(_sender->getSocket(), ERR_BADCHANNELKEY(_server->getName(), _sender->getNick(), it->first));    
+                    continue;
+                }
+
+                // +i
+                if (channel->getMode() & MODE_I)
+                // mode +i but not invited
+                {
+                    sendReply(_sender->getSocket(), ERR_INVITEONLYCHAN(_server->getName(), _sender->getNick(), it->first));
+                    continue;
+                }
+            }
 
             channel->addUser(_sender);
             _sender->addJoined(channel);

@@ -60,6 +60,7 @@
 #define ERR_NOSUCHCHANNEL(servername, nick, channel)    ":" + servername + " 403 " + nick + " " + channel + " :No such channel\r\n"
 #define ERR_CANNOTSENDTOCHAN(servername, nick, channel) ":" + servername + " 404 " + nick + " " + channel + " :You cannot send external messages to this channel\r\n"
 #define ERR_NOTONCHANNEL(servername, nick, channel)     ":" + servername + " 442 " + nick + " " + channel + " :You're not on that channel\r\n"
-
+#define ERR_INVITEONLYCHAN(servername, nick, channel)   ":" + servername + " 473 " + nick + " " + channel + " :Cannot join channel (invite only)\r\n"
+#define ERR_BADCHANNELKEY(servername, nick, channel)    ":" + servername + " 475 " + nick + " " + channel + " :Cannot join channel (incorrect channel key)\r\n"
 
 #endif

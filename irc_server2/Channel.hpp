@@ -74,6 +74,7 @@ public:
 
     //setters
     void setName(std::string name);
+    void setKey(std::string key);
 
     void addUser(User* user);
     void addOperator(User* user);
@@ -89,6 +90,7 @@ public:
     std::vector<User*> getUsers();
     std::vector<User*> getOperators();
     int getMode() const;
+    std::string getKey() const;
 };
 
 #endif

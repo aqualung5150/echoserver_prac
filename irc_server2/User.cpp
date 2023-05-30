@@ -38,6 +38,19 @@ bool User::isJoined(std::string channel)
     return false;
 }
 
+bool User::isInvited(Channel* channel)
+{
+    for (std::vector<Channel*>::iterator it = _invited.begin(); it != _invited.end(); ++it)
+    {
+        if (*it == channel)
+        {
+            _invited.erase(it); // also remove invited channel
+            return true;
+        }
+    }
+    return false;
+}
+
 void User::sendNoRepeat(std::string& reply)
 {
     std::vector<User*> targets;
