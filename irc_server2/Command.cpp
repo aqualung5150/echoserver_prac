@@ -79,6 +79,8 @@ void Command::connect()
         sendReply(socket, RPL_YOURHOST(_server->getName(), _sender->getNick()));
         // RPL_CREATED
         sendReply(socket, RPL_CREATED(_server->getName(), _sender->getNick()));
+        // RPL_MYINFO
+        sendReply(socket, RPL_MYINFO(_server->getName(), _sender->getNick(), "-", "ikot"));
 
         std::cout << _sender->getNick() << " has joined the server." << std::endl;
     }

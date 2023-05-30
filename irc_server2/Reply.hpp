@@ -5,7 +5,7 @@
 #define RPL_WELCOME(servername, nick, name, ip)			":" + servername + " 001 " + nick + " :Welcome to the Internet Relay Chat " + nick + "!" + name + "@" + ip + "\r\n"
 #define RPL_YOURHOST(servername, nick)					":" + servername + " 002 " + nick + " :Your host is " + servername + ", running version 1.0\r\n"
 #define RPL_CREATED(servername, nick)					":" + servername + " 003 " + nick + " :This server was created on MacOS\r\n"
-// #define RPL_MYINFO(nick)	":IRC 004" + nick + ":<servername> <version> <available user modes> <available channel modes>"
+#define RPL_MYINFO(servername, nick, usermode, channelmode) ":" + servername + " 004 " + nick + " " + servername + " version 1.0 " + usermode + " " + channelmode + "\r\n"
 //unknown command
 #define ERR_UNKNOWNCOMMAND(servername, nick, command)	":" + servername + " 421 " + nick + " " + command + " :Unknown command\r\n"
 //need more parameter
