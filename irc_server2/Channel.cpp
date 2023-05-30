@@ -1,7 +1,7 @@
 #include "Channel.hpp"
 
 Channel::Channel()
-: _name(""), _topic("default topic"), _mode(MODE_T), _key("")
+: _name(""), _topic("default topic"), _mode(MODE_T), _key(""), _limit(0)
 {
 }
 
@@ -204,4 +204,9 @@ int Channel::getMode() const
 std::string Channel::getKey() const
 {
     return _key;
+}
+
+size_t Channel::getLimit() const
+{
+    return _limit;
 }

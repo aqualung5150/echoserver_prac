@@ -57,11 +57,13 @@
 #define RPL_CHANNELMODEMSG(nick, name, ip, channel, mode)	": :" + nick + "!" + name + "@" + ip + " MODE " + channel + " " + mode + "\r\n"
 #define RPL_CHANNELMODEMSGPARAM(nick, name, ip, channel, mode, param)	": :" + nick + "!" + name + "@" + ip + " MODE " + channel + " " + mode + " " + param "\r\n"
 #define ERR_UNKNOWNMODE(servername, nick, mode)         ":" + servername + " 472 " + nick + " " + mode + " :is not a recognised channel mode.\r\n"
+
 //channel
 #define ERR_NOSUCHCHANNEL(servername, nick, channel)    ":" + servername + " 403 " + nick + " " + channel + " :No such channel\r\n"
 #define ERR_CANNOTSENDTOCHAN(servername, nick, channel) ":" + servername + " 404 " + nick + " " + channel + " :You cannot send external messages to this channel\r\n"
 #define ERR_NOTONCHANNEL(servername, nick, channel)     ":" + servername + " 442 " + nick + " " + channel + " :You're not on that channel\r\n"
 #define ERR_INVITEONLYCHAN(servername, nick, channel)   ":" + servername + " 473 " + nick + " " + channel + " :Cannot join channel (invite only)\r\n"
 #define ERR_BADCHANNELKEY(servername, nick, channel)    ":" + servername + " 475 " + nick + " " + channel + " :Cannot join channel (incorrect channel key)\r\n"
+#define ERR_CHANNELISFULL(servername, nick, channel)    ":" + servername + " 475 " + nick + " " + channel + " :Cannot join channel (channel is full)\r\n"
 
 #endif

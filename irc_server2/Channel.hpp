@@ -8,8 +8,10 @@
 #include <vector>
 
 #define MODE_I 0x0001
-#define MODE_T 0x0002
-#define MODE_K 0x0004
+#define MODE_K 0x0002
+#define MODE_L 0x0004
+#define MODE_T 0x0008
+
 
 class User;
 
@@ -35,6 +37,7 @@ private:
     
     int _mode;
     std::string _key;
+    size_t _limit;
     
     
     /*
@@ -91,6 +94,7 @@ public:
     std::vector<User*> getOperators();
     int getMode() const;
     std::string getKey() const;
+    size_t getLimit() const;
 };
 
 #endif

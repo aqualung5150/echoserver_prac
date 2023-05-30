@@ -84,8 +84,9 @@ void Command::JOIN()
             if (_sender->isInvited(channel))
             {
                 //join regardless of channel's mode
+                //even though the channel is full
             }
-            else if (channel->getMode() & (MODE_I | MODE_K))
+            else if (channel->getMode() & (MODE_I | MODE_K | MODE_L))
             {
                 // +k
                 if (channel->getMode() & MODE_K && channel->getKey().compare(it->second))
@@ -100,6 +101,14 @@ void Command::JOIN()
                 // mode +i but not invited
                 {
                     sendReply(_sender->getSocket(), ERR_INVITEONLYCHAN(_server->getName(), _sender->getNick(), it->first));
+                    continue;
+                }
+
+                // +l
+                if (channel->getMode() & MODE_L && (channel->getUsers().size() >= channel->getLimit()))
+                // mode +l but the channel is full
+                {
+                    sendReply(_sender->getSocket(), ERR_CHANNELISFULL(_server->getName(), _sender->getNick(), it->first));
                     continue;
                 }
             }

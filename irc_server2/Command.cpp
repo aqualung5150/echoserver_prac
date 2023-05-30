@@ -80,7 +80,7 @@ void Command::connect()
         // RPL_CREATED
         sendReply(socket, RPL_CREATED(_server->getName(), _sender->getNick()));
         // RPL_MYINFO
-        sendReply(socket, RPL_MYINFO(_server->getName(), _sender->getNick(), "-", "ikot"));
+        sendReply(socket, RPL_MYINFO(_server->getName(), _sender->getNick(), "-", "iklot"));
 
         std::cout << _sender->getNick() << " has joined the server." << std::endl;
     }
