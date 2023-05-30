@@ -65,7 +65,8 @@ void Server::startServer(int port)
             continue;
         }
 
-        for (std::vector<struct pollfd>::iterator it = _pollFD.begin() + 1; it != _pollFD.end(); ++it)
+        std::vector<struct pollfd>::iterator it = _pollFD.begin() + 1;
+        while (it != _pollFD.end())
         {
             // 연결 종료
             if (it->revents & POLLHUP)
@@ -74,25 +75,23 @@ void Server::startServer(int port)
                 std::cout << "POLLHUP disconnect" << std::endl;
 
                 disconnect(_users.at(it->fd));
-                if (it == _pollFD.end())
-                    break;
                 continue;
             }
 
             // 소켓 읽기 및 command 실행
             if (it->revents & (POLLIN | POLLERR))
             {
-                if (_users.at(it->fd)->readMessage(it->fd) <= 0)
+                if (_users.at(it->fd)->readMessage() <= 0)
+                //if (User::_state == DELETE)
                 {
                     //DEBUG
                     std::cout << "POLLIN disconnect" << std::endl;
 
                     disconnect(_users.at(it->fd));
-                    if (it == _pollFD.end())
-                        break;
                     continue;
                 }
             }
+            ++it;
         }
     }
 }

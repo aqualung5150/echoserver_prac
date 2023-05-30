@@ -11,7 +11,7 @@ void Command::PASS()
     if (_params[0].compare(_server->getPassword()))
     {
         _sender->setStatus(DELETE);
-        std::string reply = "ERROR :Closing link: (" + _sender->getUsername() + "@" + _sender->getIP() + ") [Access denied by configuration]\r\n";
+        std::string reply = RPL_ERROR(std::string("Closing link"), _sender->getUsername(), _sender->getIP(), std::string("Access denied by configuration"));
         sendReply(_sender->getSocket(), reply);
     }
     else

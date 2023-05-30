@@ -52,7 +52,7 @@ private:
 public:
     User();
 
-    int readMessage(int socket);
+    int readMessage();
 
     bool isJoined(std::string channel);
     bool isInvited(Channel* channel);

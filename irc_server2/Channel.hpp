@@ -24,16 +24,6 @@ private:
     std::vector<User*> _operators; // Operators of this channel
 
     std::string _topic; // Channel's topic
-
-    // MODE
-    // bool _inviteOnly;       // default : false (MODE i)
-    // bool _restrictedTopic;  // defualt : true (MODE t)
-    // std::string _key;  // defualt : ""(false) - empty string (MODE k [password])
-
-    // MODE - Bit Mask
-    // #define I 0x0001
-    // #define T 0x0002
-    // #define K 0x0004
     
     int _mode;
     std::string _key;

@@ -24,7 +24,7 @@ void Command::PRIVMSG()
     for (std::vector<std::string>::iterator it = target.begin(); it != target.end(); ++it)
     {
         // make reply message
-        std::string reply = ":" + _sender->getNick() + "!" + _sender->getUsername() + "@" + _sender->getIP() + " PRIVMSG " + *it + " :" + _trailing + "\r\n";
+        std::string reply = RPL_PRIVMSG(_sender->getNick(), _sender->getUsername(), _sender->getIP(), *it, _trailing);
         
         // Msg to channel
         if ((*it)[0] == '#')

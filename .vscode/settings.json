@@ -71,6 +71,7 @@
         "compare": "cpp",
         "concepts": "cpp",
         "variant": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "__functional_03": "cpp"
     }
 }

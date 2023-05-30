@@ -8,15 +8,16 @@ void Command::QUIT()
 
     // reply to _sender
     if (_trailing.empty())
-        reply = "ERROR :Closing link: (" + _sender->getUsername() + "@" + _sender->getIP() + ") [Client exited]\r\n";
+        reply = RPL_ERROR(std::string("Closing link"), _sender->getUsername(), _sender->getIP(), "Client exited");
     else
-        reply = "ERROR :Closing link: (" + _sender->getUsername() + "@" + _sender->getIP() + ") [Quit: " + _trailing + "]\r\n";
+        reply = RPL_ERROR(std::string("Closing link"), _sender->getUsername(), _sender->getIP(), "Quit: " + _trailing);
     sendReply(_sender->getSocket(), reply);
 
     // reply to _joind channel
     if (_trailing.empty())
-        reply = ":" + _sender->getNick() + "!" + _sender->getUsername() + "@" + _sender->getIP() + " QUIT :Client exited\r\n";
+        reply = RPL_QUIT(_sender->getNick(), _sender->getUsername(), _sender->getIP(), "Client exited");
+        
     else
-        reply = ":" + _sender->getNick() + "!" + _sender->getUsername() + "@" + _sender->getIP() + " QUIT :Quit: " + _trailing + "\r\n";
-        _sender->sendNoRepeat(reply);
+        reply = RPL_QUIT(_sender->getNick(), _sender->getUsername(), _sender->getIP(), "Quit: " + _trailing);
+    _sender->sendNoRepeat(reply);
 }

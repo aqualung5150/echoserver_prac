@@ -5,12 +5,12 @@ User::User()
 {
 }
 
-int User::readMessage(int socket)
+int User::readMessage()
 {
     char buf[BUF_SIZE];
     int nread;
 
-    nread = read(socket, buf, BUF_SIZE);
+    nread = read(_socket, buf, BUF_SIZE);
 
     if (nread == 0 || nread == -1)
         return (0);

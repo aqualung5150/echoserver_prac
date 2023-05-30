@@ -58,9 +58,8 @@ void Command::JOIN()
         // Join the channel
         Channel* channel = _server->getChannel(it->first);
 
-        //reply to everyone on the channel
-        //:zzz!root@127.0.0.1 JOIN :#yyyy
-        std::string reply = ":" + _sender->getNick() + "!" + _sender->getUsername() + "@" + _sender->getIP() + " JOIN :" + it->first + "\r\n";
+        // make reply to everyone on the channel
+        std::string reply = RPL_JOIN(_sender->getNick(), _sender->getUsername(), _sender->getIP(), it->first);
 
         // Create new channel as operator
         if (channel == NULL)
